@@ -25,7 +25,6 @@ As of today, the events we callback on are:
 
 Features not _yet_ implemented:
 
-*   Features not supported:
 *   Timers
 *   Cancellations
 *   Signals
@@ -90,14 +89,76 @@ Then wait for a decision and call the events processor to handle the event:
     var workflowProcessor = new WorkflowEventsProcessor(decisionTask, workflows);
     var decisionRequest = workflowProcessor.Decide();
 	
+And here's the definition for a workflow:
+
+    public class CustomerOrderWorkflow : WorkflowBase
+    {
+        public CustomerOrderWorkflow()
+        {
+            WorkflowSteps = new ISetupContext[]
+            {
+                // An activity
+                new WorkflowActivitySetupContext
+                    {
+                        ActivityName = "VerifyOrder",
+                        ActivityVersion = "1.0",
+                        ActivityId = Guid.NewGuid().ToString(),
+                        Control = "",
+                        Input = "",
+                        ScheduleToCloseTimeout = "60",
+                        TaskList = "ActivityTaskList-Default",
+                        ScheduleToStartTimeout = "60",
+                        StartToCloseTimeout = "60",
+                        HeartbeatTimeout = "NONE"
+                    },
+    
+                // Followed by a child workflow
+                new WorkflowSetupContext
+                    {
+                        TagList = new List<string>(),
+                        WorkflowName = "VerifyCustomerWorkflow",
+                        WorkflowVersion = "1.0",
+                        WorkflowId = Guid.NewGuid().ToString(),
+                        Control = "",
+                        Input = "",
+                        ExecutionStartToCloseTimeout = "600",
+                        TaskList = "DeciderTaskList-Default",
+                        TaskStartToCloseTimeout = "60",
+                        ChildPolicy = "TERMINATE",
+                    },
+    
+                // Followed by another activity
+                new WorkflowActivitySetupContext
+                    {
+                        ActivityName = "ShipOrder",
+                        ActivityVersion = "1.0",
+                        ActivityId = Guid.NewGuid().ToString(),
+                        Control = "",
+                        Input = "",
+                        ScheduleToCloseTimeout = "60",
+                        TaskList = "ActivityTaskList-Default",
+                        ScheduleToStartTimeout = "60",
+                        StartToCloseTimeout = "60",
+                        HeartbeatTimeout = "NONE"
+                    }
+            };
+        }
+    }
+
 For detailed information, please refer to the code as that is really the best guide. 
+
+### NuGet Package Information
+A NuGet package is also available for this library. More information at 
+https://nuget.org/packages/SimpleWorkflowFramework.NET/
 
 
 ### Contributors:
 *   Shawn Debnath
 
 There's a lot that can be done to improve this library and make other's lives easier and this project could definitely
-get some help. I encourage folks to clone the repository, make improvements, be it code, features, documentation, 
-tests ... anything and send a pull request. If things aren't too far off the main vision, I will be glad to pull the 
-changes in and add your name to the list of contributors.
+use some help. I encourage folks to clone the repository, make improvements, be it code, features, documentation, 
+tests ... anything. You can either send me a pull request or a diff/patch and I can add you as a collaborator. I will 
+also be glad to add your name to the list of contributors.
+
+If you would like to discuss a topic, feel free to email me at the link on https://github.com/sdebnath.
  
