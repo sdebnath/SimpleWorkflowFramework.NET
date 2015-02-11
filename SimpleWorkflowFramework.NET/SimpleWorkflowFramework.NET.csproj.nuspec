@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+	<metadata>
+		<id>SimpleWorkflowFramework.NET</id>
+		<version>1.1.0</version>
+		<authors>Shawn Debnath</authors>
+		<owners>Shawn Debnath</owners>
+		<licenseUrl>http://opensource.org/licenses/BSD-2-Clause</licenseUrl>
+		<projectUrl>https://github.com/sdebnath/SimpleWorkflowFramework.NET</projectUrl>
+		<requireLicenseAcceptance>true</requireLicenseAcceptance>
+		<description>A helper library to simplify writing code for AWS SWF in C#</description>
+		<summary>A helper library to simplify writing code for AWS SWF in C#</summary>
+		<releaseNotes>Updated to up-to-date AWS SDK</releaseNotes>
+		<copyright>Copyright (c) 2013-2015 Shawn Debnath</copyright>
+		<dependencies>
+			<dependency id="AWSSDK" version="2.3.0.0" />
+			<dependency id="Newtonsoft.Json" version="6.0.0" />
+		</dependencies>
+	</metadata>
+</package>
