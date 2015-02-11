@@ -155,12 +155,12 @@ namespace Application
                                     // we are past the 60 seconds that AWS holds a connection in case a task
                                     // becomes available. If this is the case, we simply retry.
                                     var taskToken =
-                                        decisionTaskResponse.PollForDecisionTaskResult.DecisionTask.TaskToken;
+                                        decisionTaskResponse.DecisionTask.TaskToken;
                                     if (!String.IsNullOrEmpty(taskToken))
                                     {
                                         // We have a valid task, do something...
                                         var decisionTask =
-                                            decisionTaskResponse.PollForDecisionTaskResult.DecisionTask;
+                                            decisionTaskResponse.DecisionTask;
 
                                         switch (decisionTask.WorkflowType.Name)
                                         {
@@ -229,12 +229,12 @@ namespace Application
                                     // we are past the 60 seconds that AWS holds a connection in case a task
                                     // becomes available. If this is the case, we simply retry.
                                     var taskToken =
-                                        activityTaskResponse.PollForActivityTaskResult.ActivityTask.TaskToken;
+                                        activityTaskResponse.ActivityTask.TaskToken;
                                     if (!String.IsNullOrEmpty(taskToken))
                                     {
                                         // We have a valid task, do something...
                                         var activityTask =
-                                            activityTaskResponse.PollForActivityTaskResult.ActivityTask;
+                                            activityTaskResponse.ActivityTask;
 
                                         Console.WriteLine("\n");
                                         Console.WriteLine(">>> Activity: " + activityTask.ActivityType.Name);
@@ -334,7 +334,7 @@ namespace Application
                     };
 
                     var listDomainResponse = swfClient.ListDomains(listDomainRequest);
-                    foreach (var domain in listDomainResponse.ListDomainsResult.DomainInfos.Name)
+                    foreach (var domain in listDomainResponse.DomainInfos.Infos)
                     {
                         sr.WriteLine("[" + domain.Name + "]");
                         sr.WriteLine("status: " + domain.Status);
@@ -349,7 +349,7 @@ namespace Application
                         var listWorkflowTypesResponse = swfClient.ListWorkflowTypes(listWorkflowRequest);
                         foreach (
                             var workflow in
-                                listWorkflowTypesResponse.ListWorkflowTypesResult.WorkflowTypeInfos.TypeInfos)
+                                listWorkflowTypesResponse.WorkflowTypeInfos.TypeInfos)
                         {
                             sr.WriteLine("  [" + workflow.WorkflowType.Name + "] (" + workflow.WorkflowType.Version + ") " + workflow.Status);
                             sr.WriteLine("  creation: " + workflow.CreationDate);
@@ -366,7 +366,7 @@ namespace Application
                         };
                         var listActivityResponse = swfClient.ListActivityTypes(listActivityRequest);
                         foreach (
-                            var activity in listActivityResponse.ListActivityTypesResult.ActivityTypeInfos.TypeInfos)
+                            var activity in listActivityResponse.ActivityTypeInfos.TypeInfos)
                         {
                             sr.WriteLine("  [" + activity.ActivityType.Name + "] (" + activity.ActivityType.Version + ") " + activity.Status);
                             sr.WriteLine("  creation: " + activity.CreationDate);
