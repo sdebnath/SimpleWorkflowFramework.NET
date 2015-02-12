@@ -32,6 +32,8 @@ namespace SimpleWorkflowFramework.NET
     public class WorkflowDecisionContext
     {
         public string DecisionType { get; set; }
+		public string StartingInput { get; set; }
+		public string ExecutionContext { get; set; }
 
         public string WorkflowName { get; set; }
         public string WorkflowVersion { get; set; }

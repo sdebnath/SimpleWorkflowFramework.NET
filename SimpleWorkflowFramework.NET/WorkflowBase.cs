@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using Amazon.SimpleWorkflow.Model;
+using Newtonsoft.Json;
 
 namespace SimpleWorkflowFramework.NET
 {
@@ -36,7 +37,7 @@ namespace SimpleWorkflowFramework.NET
     /// </summary>
     public class WorkflowBase : IWorkflowDecisionMaker
     {
-        #region Data Members
+		#region Data Members
         protected ISetupContext[] WorkflowSteps;
         #endregion Data Members
 
@@ -49,7 +50,9 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         public virtual RespondDecisionTaskCompletedRequest OnWorkflowExecutionStarted(WorkflowDecisionContext context)
         {
-            if (WorkflowSteps == null || WorkflowSteps.Length == 0)
+			var activityState = BuildActivityState(context);
+
+			if (WorkflowSteps == null || WorkflowSteps.Length == 0)
             {
                 return CompleteWorkflow("");
             }
@@ -66,7 +69,7 @@ namespace SimpleWorkflowFramework.NET
                 // execution start) to the activity
                 if (String.IsNullOrEmpty(activity.Input))
                 {
-                    activity.Input = context.Input;
+					activity.Input = activityState;
                 }
 
                 decisionRequest = ScheduleActivityTask(activity);
@@ -82,7 +85,7 @@ namespace SimpleWorkflowFramework.NET
                 // execution start) to the activity
                 if (String.IsNullOrEmpty(childWorkflow.Input))
                 {
-                    childWorkflow.Input = context.Input;
+					childWorkflow.Input = activityState;
                 }
 
                 decisionRequest = StartChildWorkflowExecution(childWorkflow);
@@ -118,19 +121,22 @@ namespace SimpleWorkflowFramework.NET
                 return CompleteWorkflow(context.Result);
             }
 
+			var activityState = BuildActivityState(context);
+
             // Found another step
             if (nextStep.IsActivity())
             {
                 // Next step is an activity, set up a schedule activity decision
                 var activity = ((WorkflowActivitySetupContext)nextStep).Clone();
-                activity.Input = context.Result;
+				activity.Input = activityState;
+				
                 return ScheduleActivityTask(activity);
             }
 
             // Next step is not an activity, set up a child workflow decision
             Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
             var workflow = ((WorkflowSetupContext)nextStep).Clone();
-            workflow.Input = context.Result;
+			workflow.Input = activityState;
             return StartChildWorkflowExecution(workflow);
         }
 
@@ -152,6 +158,7 @@ namespace SimpleWorkflowFramework.NET
         public virtual RespondDecisionTaskCompletedRequest OnActivityTaskTimedOut(WorkflowDecisionContext context)
         {
             var timeoutCount = 0;
+			var activityState = BuildActivityState(context);
 
             // If we have already re-tried 3 times, fail the workflow
             if (context.Markers.ContainsKey("ActivityTimeoutMarker"))
@@ -198,7 +205,7 @@ namespace SimpleWorkflowFramework.NET
 
             if (String.IsNullOrEmpty(workflowStep.Input))
             {
-                workflowStep.Input = context.Input;
+				workflowStep.Input = activityState;
             }
 
             // Fetch the decision to re-schedule the activity
@@ -362,6 +369,23 @@ namespace SimpleWorkflowFramework.NET
             Debug.WriteLine(">>> Decision: <EMPTY>");
             return decisionRequest;
         }
+
+		/// <summary>
+		/// Builds the activity state object to pass to the activity.
+		/// </summary>
+		/// <param name="context">Workflow decision context supplied by SimpleWorkflowFramework.NET.</param>
+		/// <returns>The activity state.</returns>
+		protected string BuildActivityState(WorkflowDecisionContext context)
+		{
+			var activityState = new ActivityState()
+				{
+					StartingInput = context.StartingInput,
+					ExecutionContext = context.ExecutionContext,
+					PreviousResult = context.Result
+				};
+
+			return JsonConvert.SerializeObject(activityState);
+		}
         
         /// <summary>
         /// Helper method to schedule an activity task

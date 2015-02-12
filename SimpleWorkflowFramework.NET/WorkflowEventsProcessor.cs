@@ -90,130 +90,138 @@ namespace SimpleWorkflowFramework.NET
         /// </summary>
         /// <returns>Decision on how to proceed.</returns>
         public RespondDecisionTaskCompletedRequest Decide()
-        {
-            RespondDecisionTaskCompletedRequest decisionCompletedRequest;
+		{
+			RespondDecisionTaskCompletedRequest decisionCompletedRequest;
 
-            // Step 1: Walk through the relevant part of the event history chain and populate the decision context
+			// Step 1: Walk through the relevant part of the event history chain and populate the decision context
 
-            // Retrieve and store the workflow information
-            _decisionContext.WorkflowName = _decisionTask.WorkflowType.Name;
-            _decisionContext.WorkflowVersion = _decisionTask.WorkflowType.Version;
-            _decisionContext.WorkflowId = _decisionTask.WorkflowExecution.WorkflowId;
+			// Retrieve and store the workflow information
+			_decisionContext.WorkflowName = _decisionTask.WorkflowType.Name;
+			_decisionContext.WorkflowVersion = _decisionTask.WorkflowType.Version;
+			_decisionContext.WorkflowId = _decisionTask.WorkflowExecution.WorkflowId;
             
-            // Walk through the chain of events based on event ID to identify what we need to decide on
-            Debug.WriteLine(">>> Workflow: " + _decisionContext.WorkflowName);
-            foreach (var historyEvent in _events)
-            {
-                Debug.WriteLine(">>> Event Type [" + historyEvent.EventId + "] " + historyEvent.EventType);
-                switch (historyEvent.EventType)
-                {
-                    case "WorkflowExecutionStarted":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.Input = historyEvent.WorkflowExecutionStartedEventAttributes.Input;
-                        break;
+			// Walk through the chain of events based on event ID to identify what we need to decide on
+			Debug.WriteLine(">>> Workflow: " + _decisionContext.WorkflowName);
+			foreach (var historyEvent in _events)
+			{
+				Debug.WriteLine(">>> Event Type [" + historyEvent.EventId + "] " + historyEvent.EventType);
+				switch (historyEvent.EventType)
+				{
+					case "WorkflowExecutionStarted":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.Input = historyEvent.WorkflowExecutionStartedEventAttributes.Input;
+						_decisionContext.StartingInput = historyEvent.WorkflowExecutionStartedEventAttributes.Input;
+						break;
 
-                    case "WorkflowExecutionContinuedAsNew":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.Input = historyEvent.WorkflowExecutionContinuedAsNewEventAttributes.Input;
-                        break;
+					case "WorkflowExecutionContinuedAsNew":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.Input = historyEvent.WorkflowExecutionContinuedAsNewEventAttributes.Input;
+						break;
 
-                    case "ActivityTaskScheduled":
+					case "DecisionTaskCompleted":
+						// If an decision task completed event was encountered, use it to save 
+						// some of the key information as the execution context is not available as part of
+						// the rest of the ActivityTask* event attributes. We don't act on this event.
+						_decisionContext.ExecutionContext = historyEvent.DecisionTaskCompletedEventAttributes.ExecutionContext;
+						break;
+
+					case "ActivityTaskScheduled":
                         // If an activity task scheduled event was encountered, use it to save 
                         // some of the key information as the activity information is not available as part of
                         // the rest of the ActivityTask* event attributes. We don't act on this event.
-                        _decisionContext.ActivityName =
+						_decisionContext.ActivityName =
                             historyEvent.ActivityTaskScheduledEventAttributes.ActivityType.Name;
-                        _decisionContext.ActivityVersion =
+						_decisionContext.ActivityVersion =
                             historyEvent.ActivityTaskScheduledEventAttributes.ActivityType.Version;
-                        _decisionContext.Control = historyEvent.ActivityTaskScheduledEventAttributes.Control;
-                        _decisionContext.Input = historyEvent.ActivityTaskScheduledEventAttributes.Input;
-                        break;
+						_decisionContext.Control = historyEvent.ActivityTaskScheduledEventAttributes.Control;
+						_decisionContext.Input = historyEvent.ActivityTaskScheduledEventAttributes.Input;
+						break;
 
-                    case "ActivityTaskCompleted":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.Result = historyEvent.ActivityTaskCompletedEventAttributes.Result;
-                        break;
+					case "ActivityTaskCompleted":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.Result = historyEvent.ActivityTaskCompletedEventAttributes.Result;
+						break;
 
-                    case "ActivityTaskFailed":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.Details = historyEvent.ActivityTaskFailedEventAttributes.Details;
-                        _decisionContext.Reason = historyEvent.ActivityTaskFailedEventAttributes.Reason;
-                        break;
+					case "ActivityTaskFailed":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.Details = historyEvent.ActivityTaskFailedEventAttributes.Details;
+						_decisionContext.Reason = historyEvent.ActivityTaskFailedEventAttributes.Reason;
+						break;
 
-                    case "ActivityTaskTimedOut":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.Details = historyEvent.ActivityTaskTimedOutEventAttributes.Details;
-                        _decisionContext.TimeoutType = historyEvent.ActivityTaskTimedOutEventAttributes.TimeoutType;
-                        break;
+					case "ActivityTaskTimedOut":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.Details = historyEvent.ActivityTaskTimedOutEventAttributes.Details;
+						_decisionContext.TimeoutType = historyEvent.ActivityTaskTimedOutEventAttributes.TimeoutType;
+						break;
 
-                    case "ScheduleActivityTaskFailed":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ActivityName =
+					case "ScheduleActivityTaskFailed":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ActivityName =
                             historyEvent.ScheduleActivityTaskFailedEventAttributes.ActivityType.Name;
-                        _decisionContext.ActivityVersion =
+						_decisionContext.ActivityVersion =
                             historyEvent.ScheduleActivityTaskFailedEventAttributes.ActivityType.Version;
-                        _decisionContext.Cause = historyEvent.ScheduleActivityTaskFailedEventAttributes.Cause;
-                        break;
+						_decisionContext.Cause = historyEvent.ScheduleActivityTaskFailedEventAttributes.Cause;
+						break;
 
-                    case "ChildWorkflowExecutionStarted":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ChildWorkflowName =
+					case "ChildWorkflowExecutionStarted":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ChildWorkflowName =
                             historyEvent.ChildWorkflowExecutionStartedEventAttributes.WorkflowType.Name;
-                        _decisionContext.ChildWorkflowVersion =
+						_decisionContext.ChildWorkflowVersion =
                             historyEvent.ChildWorkflowExecutionStartedEventAttributes.WorkflowType.Version;
-                        break;
+						break;
 
-                    case "ChildWorkflowExecutionCompleted":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ChildWorkflowName =
+					case "ChildWorkflowExecutionCompleted":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ChildWorkflowName =
                             historyEvent.ChildWorkflowExecutionCompletedEventAttributes.WorkflowType.Name;
-                        _decisionContext.ChildWorkflowVersion =
+						_decisionContext.ChildWorkflowVersion =
                             historyEvent.ChildWorkflowExecutionCompletedEventAttributes.WorkflowType.Version;
-                        _decisionContext.Result = historyEvent.ChildWorkflowExecutionCompletedEventAttributes.Result;
-                        break;
+						_decisionContext.Result = historyEvent.ChildWorkflowExecutionCompletedEventAttributes.Result;
+						break;
 
-                    case "ChildWorkflowExecutionFailed":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ChildWorkflowName =
+					case "ChildWorkflowExecutionFailed":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ChildWorkflowName =
                             historyEvent.ChildWorkflowExecutionFailedEventAttributes.WorkflowType.Name;
-                        _decisionContext.ChildWorkflowVersion =
+						_decisionContext.ChildWorkflowVersion =
                             historyEvent.ChildWorkflowExecutionFailedEventAttributes.WorkflowType.Version;
-                        _decisionContext.Details = historyEvent.ChildWorkflowExecutionFailedEventAttributes.Details;
-                        _decisionContext.Reason = historyEvent.ChildWorkflowExecutionFailedEventAttributes.Reason;
-                        break;
+						_decisionContext.Details = historyEvent.ChildWorkflowExecutionFailedEventAttributes.Details;
+						_decisionContext.Reason = historyEvent.ChildWorkflowExecutionFailedEventAttributes.Reason;
+						break;
 
-                    case "ChildWorkflowExecutionTerminated":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ChildWorkflowName =
+					case "ChildWorkflowExecutionTerminated":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ChildWorkflowName =
                             historyEvent.ChildWorkflowExecutionTerminatedEventAttributes.WorkflowType.Name;
-                        _decisionContext.ChildWorkflowVersion =
+						_decisionContext.ChildWorkflowVersion =
                             historyEvent.ChildWorkflowExecutionTerminatedEventAttributes.WorkflowType.Version;
-                        break;
+						break;
 
-                    case "ChildWorkflowExecutionTimedOut":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ChildWorkflowName =
+					case "ChildWorkflowExecutionTimedOut":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ChildWorkflowName =
                             historyEvent.ChildWorkflowExecutionTimedOutEventAttributes.WorkflowType.Name;
-                        _decisionContext.ChildWorkflowVersion =
+						_decisionContext.ChildWorkflowVersion =
                             historyEvent.ChildWorkflowExecutionTimedOutEventAttributes.WorkflowType.Version;
-                        _decisionContext.TimeoutType =
+						_decisionContext.TimeoutType =
                             historyEvent.ChildWorkflowExecutionTimedOutEventAttributes.TimeoutType;
-                        break;
+						break;
 
-                    case "MarkerRecorded":
+					case "MarkerRecorded":
                         // We don't act on markers but save the marker information in the decision context so that
                         // the workflow has all the information it needs to make the decision. NOTE: values of markers
                         // with the same names are overwritten
-                        var markerName = historyEvent.MarkerRecordedEventAttributes.MarkerName;
-                        _decisionContext.Markers[markerName] = historyEvent.MarkerRecordedEventAttributes.Details;
-                        Debug.WriteLine(">>> Marker [" + markerName + "] = " + _decisionContext.Markers[markerName]);
-                        break;
+						var markerName = historyEvent.MarkerRecordedEventAttributes.MarkerName;
+						_decisionContext.Markers[markerName] = historyEvent.MarkerRecordedEventAttributes.Details;
+						Debug.WriteLine(">>> Marker [" + markerName + "] = " + _decisionContext.Markers[markerName]);
+						break;
 
-                    case "StartChildWorkflowExecutionFailed":
-                        _decisionContext.DecisionType = historyEvent.EventType;
-                        _decisionContext.ChildWorkflowName =
+					case "StartChildWorkflowExecutionFailed":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.ChildWorkflowName =
                             historyEvent.StartChildWorkflowExecutionFailedEventAttributes.WorkflowType.Name;
-                        _decisionContext.ChildWorkflowVersion =
+						_decisionContext.ChildWorkflowVersion =
                             historyEvent.StartChildWorkflowExecutionFailedEventAttributes.WorkflowType.Version;
                         _decisionContext.Cause = historyEvent.StartChildWorkflowExecutionFailedEventAttributes.Cause;
                         break;
@@ -283,6 +291,7 @@ namespace SimpleWorkflowFramework.NET
 
             // Assign the task token and return
             decisionCompletedRequest.TaskToken = _decisionTask.TaskToken;
+			decisionCompletedRequest.ExecutionContext = _decisionContext.ExecutionContext;
             return decisionCompletedRequest;
         }
 
