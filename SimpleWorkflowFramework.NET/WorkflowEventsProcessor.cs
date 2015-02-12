@@ -25,6 +25,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Amazon.SimpleWorkflow;
 using Amazon.SimpleWorkflow.Model;
 
 namespace SimpleWorkflowFramework.NET
@@ -33,19 +34,32 @@ namespace SimpleWorkflowFramework.NET
     /// Processes SWF events to extract the context upon which the current decision needs to be made
     /// and calls on the appropriate workflow decision object to make a decision.
     /// </summary>
-    public class WorkflowEventsProcessor
+	public class WorkflowEventsProcessor : IDisposable
     {
-        private readonly DecisionTask _decisionTask;
+		private readonly DecisionTask _decisionTask;
+		private readonly PollForDecisionTaskRequest _request;
         private readonly WorkflowDecisionContext _decisionContext;
+		private readonly IAmazonSimpleWorkflow _swfClient;
         private readonly WorkflowEventsIterator _events;
         private readonly Dictionary<string, Type> _workflows;
+
+		/// <summary>
+		/// Constructor for the workflow event processor. 
+		/// </summary>
+		/// <param name="decisionTask">Decision task passed in from SWF as decision task response.</param>
+		/// <param name="workflows">IEnumerable set of string for workflow name and Type for workflow class.</param>
+		/// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
+		public WorkflowEventsProcessor(DecisionTask decisionTask, IEnumerable<KeyValuePair<string, Type>> workflows, PollForDecisionTaskRequest request)
+			: this(decisionTask, workflows, request, new AmazonSimpleWorkflowClient()) {}
 
         /// <summary>
         /// Constructor for the workflow event processor. 
         /// </summary>
         /// <param name="decisionTask">Decision task passed in from SWF as decision task response.</param>
         /// <param name="workflows">IEnumerable set of string for workflow name and Type for workflow class.</param>
-        public WorkflowEventsProcessor(DecisionTask decisionTask, IEnumerable<KeyValuePair<string, Type>> workflows)
+		/// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
+		/// <param name="swfClient">An SWF client.</param>
+		public WorkflowEventsProcessor(DecisionTask decisionTask, IEnumerable<KeyValuePair<string, Type>> workflows, PollForDecisionTaskRequest request, IAmazonSimpleWorkflow swfClient)
         {
             // Decision task can't be null.
             if (decisionTask == null)
@@ -53,13 +67,20 @@ namespace SimpleWorkflowFramework.NET
                 throw new ArgumentNullException("decisionTask");
             }
 
+			if (request == null)
+			{
+				throw new ArgumentNullException("request");
+			}
+
             // Store the decision task and allocate a new decision context and event dictionary which
             // we will use as we walk through the chain of events
             _decisionTask = decisionTask;
+			_request = request;
             _decisionContext = new WorkflowDecisionContext();
+			_swfClient = swfClient;
 
             // Set up our events data structure
-            _events = new WorkflowEventsIterator(ref decisionTask);
+			_events = new WorkflowEventsIterator(ref decisionTask, _request, _swfClient);
             _workflows = (Dictionary<string, Type>)workflows;
         }
 
@@ -264,5 +285,10 @@ namespace SimpleWorkflowFramework.NET
             decisionCompletedRequest.TaskToken = _decisionTask.TaskToken;
             return decisionCompletedRequest;
         }
+
+		public void Dispose()
+		{
+			_swfClient.Dispose();
+		}
     }
 }

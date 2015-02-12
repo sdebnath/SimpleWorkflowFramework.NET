@@ -25,61 +25,66 @@
 using System;
 using System.Collections.Generic;
 using Amazon.SimpleWorkflow.Model;
+using Amazon.SimpleWorkflow;
 
 namespace SimpleWorkflowFramework.NET
 {
     /// <summary>
     /// Provides an iterator for the history events in a decision request.
     /// </summary>
-    public class WorkflowEventsIterator
+	public class WorkflowEventsIterator : IEnumerable<HistoryEvent>
     {
-        private readonly List<HistoryEvent> _historyEvents; 
-        private readonly int _scopedStartEventId;
-        private readonly int _scopedEndEventId;
+		private readonly List<HistoryEvent> _historyEvents;
+		private readonly PollForDecisionTaskRequest _request;
+		private readonly IAmazonSimpleWorkflow _swfClient;
+		private DecisionTask _lastResponse;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="SimpleWorkflowFramework.NET.WorkflowEventsIterator"/> class.
+		/// </summary>
+		/// <param name="decisionTask">Reference to the decision task passed in from SWF.</param>
+		/// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
+		/// <param name="swfClient">An SWF client.</param>
+		public WorkflowEventsIterator(ref DecisionTask decisionTask, PollForDecisionTaskRequest request, IAmazonSimpleWorkflow swfClient)
+		{
+			_lastResponse = decisionTask;
+			_request = request;
+			_swfClient = swfClient;
+
+			_historyEvents = decisionTask.Events;
+		}
 
         /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="decisionTask">Reference to the decision task passed in from SWF.</param>
-        public WorkflowEventsIterator(ref DecisionTask decisionTask)
-        {
-            // Store a reference to the events
-            _historyEvents = decisionTask.Events;
-
-            // Store the start and end event IDs
-            _scopedStartEventId = (int)decisionTask.PreviousStartedEventId == 0
-                                ? 1
-                                : (int)decisionTask.PreviousStartedEventId;
-            _scopedEndEventId = decisionTask.Events.Count;
-        }
-
-        /// <summary>
-        /// Scoped start event ID for the decision to be made.
-        /// </summary>
-        public int ScopedStartEventId
-        {
-            get { return _scopedStartEventId; }
-        }
-
-        /// <summary>
-        /// Scoped end event ID for the decision to be made.
-        /// </summary>
-        public int ScopedEndEventId
-        {
-            get { return _scopedEndEventId; }
-        }
-
-        /// <summary>
-        /// Enumerator for the scoped events needed for the decision.
+        /// Enumerator for history events needed for the decision.
         /// </summary>
         /// <returns>IEnumerator for the scoped events.</returns>
         public IEnumerator<HistoryEvent> GetEnumerator()
-        {
-            for (var i = _scopedStartEventId; i <= _scopedEndEventId; i++)
-            {
-                yield return _historyEvents[i - 1];
-            }
+		{
+			foreach (HistoryEvent e in _historyEvents)
+			{
+				yield return e;
+			}
+
+			while (!string.IsNullOrEmpty(_lastResponse.NextPageToken))
+			{
+				List<HistoryEvent> events = GetNextPage();
+				_historyEvents.AddRange(events);
+
+				foreach (HistoryEvent e in events)
+				{
+					yield return e;
+				}
+			}
         }
+
+		/// <summary>
+		/// Gets the enumerator.
+		/// </summary>
+		/// <returns>The enumerator.</returns>
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
+		}
 
         /// <summary>
         /// Indexer access based on event ID.
@@ -90,17 +95,61 @@ namespace SimpleWorkflowFramework.NET
         {
             get
             {
-                // In the case of a brand new workflow, since no previous decisions were started, the 
-                // PreviousStartedEventId in the decision task is set to 0. If using the iterator, folks should 
-                // not try to access event directly but instead through us. So for the following conditions, throw
-                // argument out of range exception
-                if (eventId == 0 || eventId < _scopedStartEventId || eventId > _scopedEndEventId)
+				// While the eventId is not in range and there are more history pages to retrieve,
+				// retrieve more history events.
+				while (eventId != 0 && eventId > _historyEvents.Count
+				       && !string.IsNullOrEmpty(_lastResponse.NextPageToken))
+				{
+					List<HistoryEvent> events = GetNextPage();
+					_historyEvents.AddRange(events);
+				}
+
+				if (eventId < 0 || eventId > _historyEvents.Count)
                 {
                     throw new ArgumentOutOfRangeException("eventId");
                 }
 
                 return _historyEvents[eventId - 1];
             }
-        }
+		}
+
+		/// <summary>
+		/// Retrieves the next page of history from SWF.
+		/// </summary>
+		/// <returns>The next page of history events.</returns>
+		private List<HistoryEvent> GetNextPage()
+		{
+			PollForDecisionTaskRequest request = new PollForDecisionTaskRequest()
+				{
+					Domain = _request.Domain,
+					NextPageToken = _lastResponse.NextPageToken,
+					TaskList = _request.TaskList,
+					MaximumPageSize = _request.MaximumPageSize
+				};
+
+			int retryCount = 10;
+			int currentTry = 1;
+			bool pollFailed;
+
+			do
+			{
+				pollFailed = false;
+
+				try
+				{
+					_lastResponse = _swfClient.PollForDecisionTask(request).DecisionTask;
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine("Poll request failed with exception: " + ex);
+					pollFailed = true;
+				}
+
+				currentTry += 1;
+			}
+			while (pollFailed && currentTry <= retryCount);
+
+			return _lastResponse.Events;
+		}
     }
 }
