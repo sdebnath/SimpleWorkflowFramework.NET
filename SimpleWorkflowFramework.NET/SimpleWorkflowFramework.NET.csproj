@@ -55,6 +55,8 @@
     <Compile Include="WorkflowEventsIterator.cs" />
     <Compile Include="WorkflowEventsProcessor.cs" />
     <Compile Include="WorkflowSetupContext.cs" />
+    <Compile Include="WorkflowTimerSetupContext.cs" />
+    <Compile Include="ActivityState.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -118,6 +118,11 @@ namespace SimpleWorkflowFramework.NET
 						_decisionContext.Input = historyEvent.WorkflowExecutionContinuedAsNewEventAttributes.Input;
 						break;
 
+					case "WorkflowExecutionCancelRequested":
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.Cause = historyEvent.WorkflowExecutionCancelRequestedEventAttributes.Cause;
+						break;
+
 					case "DecisionTaskCompleted":
 						// If an decision task completed event was encountered, use it to save 
 						// some of the key information as the execution context is not available as part of
@@ -223,71 +228,128 @@ namespace SimpleWorkflowFramework.NET
                             historyEvent.StartChildWorkflowExecutionFailedEventAttributes.WorkflowType.Name;
 						_decisionContext.ChildWorkflowVersion =
                             historyEvent.StartChildWorkflowExecutionFailedEventAttributes.WorkflowType.Version;
-                        _decisionContext.Cause = historyEvent.StartChildWorkflowExecutionFailedEventAttributes.Cause;
-                        break;
-                }
-            }
+						_decisionContext.Cause = historyEvent.StartChildWorkflowExecutionFailedEventAttributes.Cause;
+						break;
 
-            // Step 2: decide on what to do based on the processed events
+					case "TimerStarted":
+						var timer = historyEvent.TimerStartedEventAttributes;
 
-            // Create the correct instance of the decision maker
-            var decisionMaker = 
-                (IWorkflowDecisionMaker)Activator.CreateInstance(_workflows[_decisionContext.WorkflowName]);
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.TimerId = timer.TimerId;
+						_decisionContext.Timers[timer.TimerId] = timer;
+						break;
 
-            // Match the context and call the right method to make a decision
-            switch (_decisionContext.DecisionType)
-            {
-                case "WorkflowExecutionStarted":
-                    decisionCompletedRequest = decisionMaker.OnWorkflowExecutionStarted(_decisionContext);
-                    break;
+					case "TimerFired":
+						var firedTimer = historyEvent.TimerFiredEventAttributes;
 
-                case "WorkflowExecutionContinuedAsNew":
-                    decisionCompletedRequest = decisionMaker.OnWorkflowExecutionContinuedAsNew(_decisionContext);                
-                    break;
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.TimerId = firedTimer.TimerId;
 
-                case "ActivityTaskCompleted":
-                    decisionCompletedRequest = decisionMaker.OnActivityTaskCompleted(_decisionContext);
-                    break;
+						if (_decisionContext.Timers.ContainsKey(firedTimer.TimerId))
+						{
+							_decisionContext.FiredTimers[firedTimer.TimerId] = firedTimer;
+							_decisionContext.Timers.Remove(firedTimer.TimerId);
+						}
 
-                case "ActivityTaskFailed":
-                    decisionCompletedRequest = decisionMaker.OnActivityTaskFailed(_decisionContext);
-                    break;
+						break;
 
-                case "ActivityTaskTimedOut":
-                    decisionCompletedRequest = decisionMaker.OnActivityTaskTimedOut(_decisionContext);
-                    break;
+					case "TimerCanceled":
+						var canceledTimer = historyEvent.TimerCanceledEventAttributes;
 
-                case "ScheduleActivityTaskFailed":
-                    decisionCompletedRequest = decisionMaker.OnScheduleActivityTaskFailed(_decisionContext);
-                    break;
+						_decisionContext.DecisionType = historyEvent.EventType;
+						_decisionContext.TimerId = canceledTimer.TimerId;
 
-                case "ChildWorkflowExecutionStarted":
-                    decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionStarted(_decisionContext);
-                    break;
+						if (_decisionContext.Timers.ContainsKey(canceledTimer.TimerId))
+						{
+							_decisionContext.CanceledTimers[canceledTimer.TimerId] = canceledTimer;
+							_decisionContext.Timers.Remove(canceledTimer.TimerId);
+						}
 
-                case "ChildWorkflowExecutionCompleted":
-                    decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionCompleted(_decisionContext);
-                    break;
+						break;
+				}
+			}
 
-                case "ChildWorkflowExecutionFailed":
-                    decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionFailed(_decisionContext);
-                    break;
+			// Step 2: decide on what to do based on the processed events
 
-                case "ChildWorkflowExecutionTerminated":
-                    decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionTerminated(_decisionContext);
-                    break;
+			// Create the correct instance of the decision maker
+			var decisionMaker = 
+				(IWorkflowDecisionMaker) Activator.CreateInstance(_workflows[_decisionContext.WorkflowName]);
 
-                case "ChildWorkflowExecutionTimedOut":
-                    decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionTimedOut(_decisionContext);
-                    break;
+			// Match the context and call the right method to make a decision
+			switch (_decisionContext.DecisionType)
+			{
+				case "WorkflowExecutionStarted":
+					decisionCompletedRequest = decisionMaker.OnWorkflowExecutionStarted(_decisionContext);
+					break;
 
-                case "StartChildWorkflowExecutionFailed":
-                    decisionCompletedRequest = decisionMaker.OnStartChildWorkflowExecutionFailed(_decisionContext);
-                    break;
+				case "WorkflowExecutionContinuedAsNew":
+					decisionCompletedRequest = decisionMaker.OnWorkflowExecutionContinuedAsNew(_decisionContext);                
+					break;
 
-                default:
-                    throw new InvalidOperationException("Unhandled event type.");
-            }
+				case "WorkflowExecutionCancelRequested":
+					decisionCompletedRequest = decisionMaker.OnWorkflowExecutionCancelRequested(_decisionContext);
+					break;
+
+				case "ActivityTaskCompleted":
+					decisionCompletedRequest = decisionMaker.OnActivityTaskCompleted(_decisionContext);
+					break;
+
+				case "ActivityTaskFailed":
+					decisionCompletedRequest = decisionMaker.OnActivityTaskFailed(_decisionContext);
+					break;
+
+				case "ActivityTaskTimedOut":
+					decisionCompletedRequest = decisionMaker.OnActivityTaskTimedOut(_decisionContext);
+					break;
+
+				case "ScheduleActivityTaskFailed":
+					decisionCompletedRequest = decisionMaker.OnScheduleActivityTaskFailed(_decisionContext);
+					break;
+
+				case "ChildWorkflowExecutionStarted":
+					decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionStarted(_decisionContext);
+					break;
+
+				case "ChildWorkflowExecutionCompleted":
+					decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionCompleted(_decisionContext);
+					break;
+
+				case "ChildWorkflowExecutionFailed":
+					decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionFailed(_decisionContext);
+					break;
+
+				case "ChildWorkflowExecutionTerminated":
+					decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionTerminated(_decisionContext);
+					break;
+
+				case "ChildWorkflowExecutionTimedOut":
+					decisionCompletedRequest = decisionMaker.OnChildWorkflowExecutionTimedOut(_decisionContext);
+					break;
+
+				case "StartChildWorkflowExecutionFailed":
+					decisionCompletedRequest = decisionMaker.OnStartChildWorkflowExecutionFailed(_decisionContext);
+					break;
+
+				case "TimerStarted":
+					decisionCompletedRequest = decisionMaker.OnTimerStarted(_decisionContext);
+					break;
+
+				case "TimerFired":
+					decisionCompletedRequest = decisionMaker.OnTimerFired(_decisionContext);
+					break;
+
+				case "TimerCanceled":
+					decisionCompletedRequest = decisionMaker.OnTimerCanceled(_decisionContext);
+					break;
+
+				default:
+					throw new InvalidOperationException("Unhandled event type.");
+			}
+
+//			if (decisionCompletedRequest.Decisions.Count == 0)
+//			{
+//				return null;
+//			}
 
             // Assign the task token and return
             decisionCompletedRequest.TaskToken = _decisionTask.TaskToken;
