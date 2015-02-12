@@ -1,5 +1,5 @@
 ﻿//----------------------------------------------------------------------------------------------------------------------
-//  Copyright (c) 2013, Shawn Debnath. All rights reserved.
+//  Copyright (c) 2015, El Loco. All rights reserved.
 //    
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -23,33 +23,36 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 
 namespace SimpleWorkflowFramework.NET
 {
-    /// <summary>
-    /// Information required to initiate an activity.
-    /// </summary>
-    [Serializable]
-    public class WorkflowActivitySetupContext : ISetupContext
-    {
-        public string ActivityName { get; set; }
-        public string ActivityVersion { get; set; }
-        public string ActivityId { get; set; }
-        public string Control { get; set; }
-        public string HeartbeatTimeout { get; set; }
+	public enum TimerCanceledAction
+	{
+		ProceedToNext,
+		CancelWorkflow,
+		CompleteWorkflow
+	}
 
-        // If the input field is an empty string, the result from the previous activity
-        // or child workflow execution is provided as the input.
-        public string Input { get; set; }
-        
-        public string ScheduleToCloseTimeout { get; set; }
-        public string ScheduleToStartTimeout { get; set; }
-        public string StartToCloseTimeout { get; set; }
-        public string TaskList { get; set; }
 
-        // ISetupContext members
-        public bool IsActivity() { return true; }
+	[Serializable]
+	public class WorkflowTimerSetupContext : ISetupContext
+	{
+		public string TimerId { get; set; }
+		public string StartToFileTimeout { get; set; }
+		public string Control { get; set; }
+
+		private TimerCanceledAction _cancelAction = TimerCanceledAction.ProceedToNext;
+		public TimerCanceledAction CancelAction {
+			get { return _cancelAction; }
+			set { _cancelAction = value; }
+		}
+
+		public delegate string OnCancel(WorkflowDecisionContext context);
+
+		public bool IsActivity() { return false; }
 		public bool IsWorkflow() { return false; }
-		public bool IsTimer() { return false; }
-    }
+		public bool IsTimer() { return true; }
+	}
 }
+
