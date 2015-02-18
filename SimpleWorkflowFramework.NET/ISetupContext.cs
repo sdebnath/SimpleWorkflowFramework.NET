@@ -28,6 +28,6 @@ namespace SimpleWorkflowFramework.NET
     {
         bool IsActivity();
         bool IsWorkflow();
-		bool IsTimer();
+        bool IsTimer();
     }
 }
