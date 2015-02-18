@@ -27,32 +27,31 @@ using System.Collections.Generic;
 
 namespace SimpleWorkflowFramework.NET
 {
-	public enum TimerCanceledAction
-	{
-		ProceedToNext,
-		CancelWorkflow,
-		CompleteWorkflow
-	}
+    public enum TimerCanceledAction
+    {
+        ProceedToNext,
+        CancelWorkflow,
+        CompleteWorkflow
+    }
 
+    [Serializable]
+    public class WorkflowTimerSetupContext : ISetupContext
+    {
+        public string TimerId { get; set; }
+        public string StartToFileTimeout { get; set; }
+        public string Control { get; set; }
 
-	[Serializable]
-	public class WorkflowTimerSetupContext : ISetupContext
-	{
-		public string TimerId { get; set; }
-		public string StartToFileTimeout { get; set; }
-		public string Control { get; set; }
+        private TimerCanceledAction _cancelAction = TimerCanceledAction.ProceedToNext;
+        public TimerCanceledAction CancelAction {
+            get { return _cancelAction; }
+            set { _cancelAction = value; }
+        }
 
-		private TimerCanceledAction _cancelAction = TimerCanceledAction.ProceedToNext;
-		public TimerCanceledAction CancelAction {
-			get { return _cancelAction; }
-			set { _cancelAction = value; }
-		}
+        public delegate string OnCancel(WorkflowDecisionContext context);
 
-		public delegate string OnCancel(WorkflowDecisionContext context);
-
-		public bool IsActivity() { return false; }
-		public bool IsWorkflow() { return false; }
-		public bool IsTimer() { return true; }
-	}
+        public bool IsActivity() { return false; }
+        public bool IsWorkflow() { return false; }
+        public bool IsTimer() { return true; }
+    }
 }
 

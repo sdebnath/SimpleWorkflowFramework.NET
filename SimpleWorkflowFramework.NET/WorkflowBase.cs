@@ -37,12 +37,14 @@ namespace SimpleWorkflowFramework.NET
     /// </summary>
     public class WorkflowBase : IWorkflowDecisionMaker
     {
-		#region Data Members
+        #region Data Members
+
         protected ISetupContext[] WorkflowSteps;
+
         #endregion Data Members
 
         #region IWorkflowDecisionMaker Methods
-        
+
         /// <summary>
         /// Sets up a new activity or child workflow as specified by the workflow at the start of the workflow.
         /// </summary>
@@ -50,9 +52,9 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         public virtual RespondDecisionTaskCompletedRequest OnWorkflowExecutionStarted(WorkflowDecisionContext context)
         {
-			var activityState = BuildActivityState(context);
+            var activityState = BuildActivityState(context);
 
-			if (WorkflowSteps == null || WorkflowSteps.Length == 0)
+            if (WorkflowSteps == null || WorkflowSteps.Length == 0)
             {
                 return CompleteWorkflow("");
             }
@@ -62,37 +64,37 @@ namespace SimpleWorkflowFramework.NET
             RespondDecisionTaskCompletedRequest decisionRequest;
             if (WorkflowSteps[0].IsActivity())
             {
-                var activity = ((WorkflowActivitySetupContext)WorkflowSteps[0]).Clone();
+                var activity = ((WorkflowActivitySetupContext) WorkflowSteps[0]).Clone();
                 Debug.Assert(activity != null, "activity != null");
 
                 // If input string is empty, we pass the input from the caller (in this case, workflow
                 // execution start) to the activity
                 if (String.IsNullOrEmpty(activity.Input))
                 {
-					activity.Input = activityState;
+                    activity.Input = activityState;
                 }
 
                 decisionRequest = ScheduleActivityTask(activity);
             }
-			else if (WorkflowSteps[0].IsTimer())
-			{
-				var timer = ((WorkflowTimerSetupContext) WorkflowSteps[0]).Clone();
-				Debug.Assert(timer != null, "timer != null");
+            else if (WorkflowSteps[0].IsTimer())
+            {
+                var timer = ((WorkflowTimerSetupContext) WorkflowSteps[0]).Clone();
+                Debug.Assert(timer != null, "timer != null");
 
-				decisionRequest = StartTimer(timer);
-			}
+                decisionRequest = StartTimer(timer);
+            }
             else
             {
                 Debug.Assert(WorkflowSteps[0].IsWorkflow(), "We can only have activity, timer, or workflow as workflow steps");
 
-                var childWorkflow = ((WorkflowSetupContext)WorkflowSteps[0]).Clone();
+                var childWorkflow = ((WorkflowSetupContext) WorkflowSteps[0]).Clone();
                 Debug.Assert(childWorkflow != null, "childWorkflow != null");
 
                 // If input string is empty, we pass the input from the caller (in this case, workflow
                 // execution start) to the activity
                 if (String.IsNullOrEmpty(childWorkflow.Input))
                 {
-					childWorkflow.Input = activityState;
+                    childWorkflow.Input = activityState;
                 }
 
                 decisionRequest = StartChildWorkflowExecution(childWorkflow);
@@ -112,10 +114,10 @@ namespace SimpleWorkflowFramework.NET
             return OnWorkflowExecutionStarted(context);
         }
 
-		public virtual RespondDecisionTaskCompletedRequest OnWorkflowExecutionCancelRequested(WorkflowDecisionContext context)
-		{
-			return CancelWorkflow(context.Details);
-		}
+        public virtual RespondDecisionTaskCompletedRequest OnWorkflowExecutionCancelRequested(WorkflowDecisionContext context)
+        {
+            return CancelWorkflow(context.Details);
+        }
 
         /// <summary>
         /// Sets up a new activity or child workflow as specified by the workflow at the completion of an activity.
@@ -125,7 +127,7 @@ namespace SimpleWorkflowFramework.NET
         public virtual RespondDecisionTaskCompletedRequest OnActivityTaskCompleted(WorkflowDecisionContext context)
         {
             // Fetch the next step
-			var nextStep = GetNextStep(true /* activity completion */, false, context.ActivityName, context.ActivityVersion);
+            var nextStep = GetNextStep(true /* activity completion */, false, context.ActivityName, context.ActivityVersion);
 
             // If we don't have anymore steps, complete the workflow
             if (nextStep == null)
@@ -133,28 +135,28 @@ namespace SimpleWorkflowFramework.NET
                 return CompleteWorkflow(context.Result);
             }
 
-			var activityState = BuildActivityState(context);
+            var activityState = BuildActivityState(context);
 
             // Found another step
             if (nextStep.IsActivity())
             {
                 // Next step is an activity, set up a schedule activity decision
-                var activity = ((WorkflowActivitySetupContext)nextStep).Clone();
-				activity.Input = activityState;
+                var activity = ((WorkflowActivitySetupContext) nextStep).Clone();
+                activity.Input = activityState;
 				
                 return ScheduleActivityTask(activity);
             }
 
-			if (nextStep.IsTimer())
-			{
-				var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
-				return StartTimer(timer);
-			}
+            if (nextStep.IsTimer())
+            {
+                var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
+                return StartTimer(timer);
+            }
 
             // Next step is not an activity, set up a child workflow decision
             Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
-            var workflow = ((WorkflowSetupContext)nextStep).Clone();
-			workflow.Input = activityState;
+            var workflow = ((WorkflowSetupContext) nextStep).Clone();
+            workflow.Input = activityState;
             return StartChildWorkflowExecution(workflow);
         }
 
@@ -176,7 +178,7 @@ namespace SimpleWorkflowFramework.NET
         public virtual RespondDecisionTaskCompletedRequest OnActivityTaskTimedOut(WorkflowDecisionContext context)
         {
             var timeoutCount = 0;
-			var activityState = BuildActivityState(context);
+            var activityState = BuildActivityState(context);
 
             // If we have already re-tried 3 times, fail the workflow
             if (context.Markers.ContainsKey("ActivityTimeoutMarker"))
@@ -192,8 +194,8 @@ namespace SimpleWorkflowFramework.NET
             timeoutCount++;
 
             // Fetch the next step and set it up with the right input and increased timeout value
-			var workflowStep = ((WorkflowActivitySetupContext)GetStep(true /* activity timed out */, false, 
-                context.ActivityName, context.ActivityVersion)).Clone();
+            var workflowStep = ((WorkflowActivitySetupContext) GetStep(true /* activity timed out */, false, 
+                                                             context.ActivityName, context.ActivityVersion)).Clone();
             switch (context.TimeoutType)
             {
                 case "START_TO_CLOSE":
@@ -217,13 +219,13 @@ namespace SimpleWorkflowFramework.NET
                     break;
 
                 default:
-                    Debug.Assert(false, "Unknown timeout type "  + context.TimeoutType);
+                    Debug.Assert(false, "Unknown timeout type " + context.TimeoutType);
                     break;
             }
 
             if (String.IsNullOrEmpty(workflowStep.Input))
             {
-				workflowStep.Input = activityState;
+                workflowStep.Input = activityState;
             }
 
             // Fetch the decision to re-schedule the activity
@@ -267,7 +269,7 @@ namespace SimpleWorkflowFramework.NET
         {
             // Fetch the next step
             var nextStep = GetNextStep(
-				false /* workflow completion */, false, context.ChildWorkflowName, context.ChildWorkflowVersion);
+                               false /* workflow completion */, false, context.ChildWorkflowName, context.ChildWorkflowVersion);
 
             // If we don't have anymore steps, complete the workflow
             if (nextStep == null)
@@ -279,20 +281,20 @@ namespace SimpleWorkflowFramework.NET
             if (nextStep.IsActivity())
             {
                 // Next step is an activity, set up a schedule activity decision
-                var activity = ((WorkflowActivitySetupContext)nextStep).Clone();
+                var activity = ((WorkflowActivitySetupContext) nextStep).Clone();
                 activity.Input = context.Result;
                 return ScheduleActivityTask(activity);
             }
 
-			if (nextStep.IsTimer())
-			{
-				var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
-				return StartTimer(timer);
-			}
+            if (nextStep.IsTimer())
+            {
+                var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
+                return StartTimer(timer);
+            }
 
             // Next step is not an activity, set up a child workflow decision
             Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
-            var workflow = ((WorkflowSetupContext)nextStep).Clone();
+            var workflow = ((WorkflowSetupContext) nextStep).Clone();
             workflow.Input = context.Result;
             return StartChildWorkflowExecution(workflow);
         }
@@ -337,8 +339,8 @@ namespace SimpleWorkflowFramework.NET
             }
             
             // Fetch the next step and set it up with the right input and doubled timeout value
-			var workflowStep = ((WorkflowSetupContext) GetStep(false /* workflow timed out */, false, context.ChildWorkflowName,
-                                                              context.ChildWorkflowVersion)).Clone();
+            var workflowStep = ((WorkflowSetupContext) GetStep(false /* workflow timed out */, false, context.ChildWorkflowName,
+                                                      context.ChildWorkflowVersion)).Clone();
             switch (context.TimeoutType)
             {
                 case "START_TO_CLOSE":
@@ -377,104 +379,104 @@ namespace SimpleWorkflowFramework.NET
             return FailWorkflow(context.Cause, "OnStartChildWorkflowExecutionFailed");
         }
 
-		public RespondDecisionTaskCompletedRequest OnTimerStarted(WorkflowDecisionContext context)
-    	{
-			return EmptyDecision();
-    	}
+        public RespondDecisionTaskCompletedRequest OnTimerStarted(WorkflowDecisionContext context)
+        {
+            return EmptyDecision();
+        }
 
-    	public RespondDecisionTaskCompletedRequest OnTimerFired(WorkflowDecisionContext context)
-		{
-			// Fetch the next step
-			var nextStep = GetNextStep(false /* activity completion */, true, context.TimerId, null);
-			var activityState = BuildActivityState(context);
+        public RespondDecisionTaskCompletedRequest OnTimerFired(WorkflowDecisionContext context)
+        {
+            // Fetch the next step
+            var nextStep = GetNextStep(false /* activity completion */, true, context.TimerId, null);
+            var activityState = BuildActivityState(context);
 
-			// If we don't have anymore steps, complete the workflow
-			if (nextStep == null)
-			{
-				return CompleteWorkflow(context.Result);
-			}
+            // If we don't have anymore steps, complete the workflow
+            if (nextStep == null)
+            {
+                return CompleteWorkflow(context.Result);
+            }
 
-			// Found another step
-			if (nextStep.IsActivity())
-			{
-				// Next step is an activity, set up a schedule activity decision
-				var activity = ((WorkflowActivitySetupContext) nextStep).Clone();
-				activity.Input = activityState;
-				return ScheduleActivityTask(activity);
-			}
+            // Found another step
+            if (nextStep.IsActivity())
+            {
+                // Next step is an activity, set up a schedule activity decision
+                var activity = ((WorkflowActivitySetupContext) nextStep).Clone();
+                activity.Input = activityState;
+                return ScheduleActivityTask(activity);
+            }
 
-			if (nextStep.IsTimer())
-			{
-				var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
-				return StartTimer(timer);
-			}
+            if (nextStep.IsTimer())
+            {
+                var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
+                return StartTimer(timer);
+            }
 
-			// Next step is not an activity, set up a child workflow decision
-			Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
-			var workflow = ((WorkflowSetupContext) nextStep).Clone();
-			workflow.Input = activityState;
-			return StartChildWorkflowExecution(workflow);
-		}
+            // Next step is not an activity, set up a child workflow decision
+            Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
+            var workflow = ((WorkflowSetupContext) nextStep).Clone();
+            workflow.Input = activityState;
+            return StartChildWorkflowExecution(workflow);
+        }
 
-		public RespondDecisionTaskCompletedRequest OnTimerCanceled(WorkflowDecisionContext context)
-    	{
-			var step = ((WorkflowTimerSetupContext) GetStep(false, true, context.TimerId, null));
+        public RespondDecisionTaskCompletedRequest OnTimerCanceled(WorkflowDecisionContext context)
+        {
+            var step = ((WorkflowTimerSetupContext) GetStep(false, true, context.TimerId, null));
 
-			switch (step.CancelAction)
-			{
-				case TimerCanceledAction.CompleteWorkflow:
-					return CompleteWorkflow(context.Result);
+            switch (step.CancelAction)
+            {
+                case TimerCanceledAction.CompleteWorkflow:
+                    return CompleteWorkflow(context.Result);
 
-				case TimerCanceledAction.CancelWorkflow:
-					return CancelWorkflow(context.Details);
+                case TimerCanceledAction.CancelWorkflow:
+                    return CancelWorkflow(context.Details);
 
-				case TimerCanceledAction.ProceedToNext:
-					var activityState = BuildActivityState(context);
-					var nextStep = GetNextStep(false /* activity completion */, true, context.TimerId, null);
+                case TimerCanceledAction.ProceedToNext:
+                    var activityState = BuildActivityState(context);
+                    var nextStep = GetNextStep(false /* activity completion */, true, context.TimerId, null);
 
 					// If we don't have anymore steps, complete the workflow
-					if (nextStep == null)
-					{
-						return CompleteWorkflow(context.Result);
-					}
+                    if (nextStep == null)
+                    {
+                        return CompleteWorkflow(context.Result);
+                    }
 
 					// Found another step
-					if (nextStep.IsActivity())
-					{
-						// Next step is an activity, set up a schedule activity decision
-						var activity = ((WorkflowActivitySetupContext) nextStep).Clone();
-						activity.Input = activityState;
-						return ScheduleActivityTask(activity);
-					}
+                    if (nextStep.IsActivity())
+                    {
+                        // Next step is an activity, set up a schedule activity decision
+                        var activity = ((WorkflowActivitySetupContext) nextStep).Clone();
+                        activity.Input = activityState;
+                        return ScheduleActivityTask(activity);
+                    }
 
-					if (nextStep.IsTimer())
-					{
-						var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
-						return StartTimer(timer);
-					}
+                    if (nextStep.IsTimer())
+                    {
+                        var timer = ((WorkflowTimerSetupContext) nextStep).Clone();
+                        return StartTimer(timer);
+                    }
 
 					// Next step is not an activity, set up a child workflow decision
-					Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
-					var workflow = ((WorkflowSetupContext)nextStep).Clone();
-					workflow.Input = activityState;
-					return StartChildWorkflowExecution(workflow);
+                    Debug.Assert(nextStep.IsWorkflow(), "Steps can only be activities or workflows.");
+                    var workflow = ((WorkflowSetupContext) nextStep).Clone();
+                    workflow.Input = activityState;
+                    return StartChildWorkflowExecution(workflow);
 
-				default:
-					throw new InvalidOperationException();
-			}
-    	}
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
 
         #endregion IWorkflowDecisionMaker Methods
 
         #region Decision Helpers
+
         /// <summary>
         /// Helper method to create an empty decision request.
         /// </summary>
         /// <returns>Properly set up decision completed request.</returns>
         public virtual RespondDecisionTaskCompletedRequest EmptyDecision()
         {
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
                 Decisions = new List<Decision>()
             };
 
@@ -482,23 +484,22 @@ namespace SimpleWorkflowFramework.NET
             return decisionRequest;
         }
 
-		/// <summary>
-		/// Builds the activity state object to pass to the activity.
-		/// </summary>
-		/// <param name="context">Workflow decision context supplied by SimpleWorkflowFramework.NET.</param>
-		/// <returns>The activity state.</returns>
-		protected string BuildActivityState(WorkflowDecisionContext context)
-		{
-			var activityState = new ActivityState()
-				{
-					StartingInput = context.StartingInput,
-					ExecutionContext = context.ExecutionContext,
-					PreviousResult = context.Result
-				};
+        /// <summary>
+        /// Builds the activity state object to pass to the activity.
+        /// </summary>
+        /// <param name="context">Workflow decision context supplied by SimpleWorkflowFramework.NET.</param>
+        /// <returns>The activity state.</returns>
+        protected string BuildActivityState(WorkflowDecisionContext context)
+        {
+            var activityState = new ActivityState() {
+                StartingInput = context.StartingInput,
+                ExecutionContext = context.ExecutionContext,
+                PreviousResult = context.Result
+            };
 
-			return JsonConvert.SerializeObject(activityState);
-		}
-        
+            return JsonConvert.SerializeObject(activityState);
+        }
+
         /// <summary>
         /// Helper method to schedule an activity task
         /// </summary>
@@ -506,11 +507,9 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         protected RespondDecisionTaskCompletedRequest ScheduleActivityTask(WorkflowActivitySetupContext activityContext)
         {
-            var attributes = new ScheduleActivityTaskDecisionAttributes
-            {
+            var attributes = new ScheduleActivityTaskDecisionAttributes {
                 ActivityId = activityContext.ActivityId,
-                ActivityType = new ActivityType
-                {
+                ActivityType = new ActivityType {
                     Name = activityContext.ActivityName,
                     Version = activityContext.ActivityVersion
                 },
@@ -520,25 +519,21 @@ namespace SimpleWorkflowFramework.NET
                 ScheduleToCloseTimeout = activityContext.ScheduleToCloseTimeout,
                 ScheduleToStartTimeout = activityContext.ScheduleToStartTimeout,
                 StartToCloseTimeout = activityContext.StartToCloseTimeout,
-                TaskList = new TaskList
-                    {
-                        Name = activityContext.TaskList
-                    }
+                TaskList = new TaskList {
+                    Name = activityContext.TaskList
+                }
             };
 
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
-                Decisions = new List<Decision>
-                    {
-                        new Decision
-                            {
-                                DecisionType = "ScheduleActivityTask",
-                                ScheduleActivityTaskDecisionAttributes = attributes
-                            }
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "ScheduleActivityTask",
+                        ScheduleActivityTaskDecisionAttributes = attributes
                     }
+                }
             };
 
-            Debug.WriteLine(">>> Decision: ScheduleActivityTask " + 
+            Debug.WriteLine(">>> Decision: ScheduleActivityTask " +
                 attributes.ActivityType.Name + " (" + attributes.ActivityType.Version + ")");
             return decisionRequest;
         }
@@ -550,11 +545,9 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         protected RespondDecisionTaskCompletedRequest StartChildWorkflowExecution(WorkflowSetupContext workflowContext)
         {
-            var attributes = new StartChildWorkflowExecutionDecisionAttributes
-            {
+            var attributes = new StartChildWorkflowExecutionDecisionAttributes {
                 WorkflowId = workflowContext.WorkflowId,
-                WorkflowType = new WorkflowType
-                {
+                WorkflowType = new WorkflowType {
                     Name = workflowContext.WorkflowName,
                     Version = workflowContext.WorkflowVersion
                 },
@@ -563,26 +556,22 @@ namespace SimpleWorkflowFramework.NET
                 ExecutionStartToCloseTimeout = workflowContext.ExecutionStartToCloseTimeout,
                 Input = workflowContext.Input,
                 TagList = workflowContext.TagList,
-                TaskList = new TaskList
-                    {
-                        Name = workflowContext.TaskList
-                    },
+                TaskList = new TaskList {
+                    Name = workflowContext.TaskList
+                },
                 TaskStartToCloseTimeout = workflowContext.TaskStartToCloseTimeout,
             };
 
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
-                Decisions = new List<Decision>
-                    {
-                        new Decision
-                            {
-                                DecisionType = "StartChildWorkflowExecution",
-                                StartChildWorkflowExecutionDecisionAttributes = attributes
-                            }
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "StartChildWorkflowExecution",
+                        StartChildWorkflowExecutionDecisionAttributes = attributes
                     }
+                }
             };
 
-            Debug.WriteLine(">>> Decision: StartChildWorkflowExecution" + 
+            Debug.WriteLine(">>> Decision: StartChildWorkflowExecution" +
                 attributes.WorkflowType.Name + " (" + attributes.WorkflowType.Version + ")");
             return decisionRequest;
         }
@@ -594,21 +583,17 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         protected RespondDecisionTaskCompletedRequest CompleteWorkflow(string result)
         {
-            var attributes = new CompleteWorkflowExecutionDecisionAttributes
-            {
+            var attributes = new CompleteWorkflowExecutionDecisionAttributes {
                 Result = result
             };
 
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
-                Decisions = new List<Decision>
-                    {
-                        new Decision
-                            {
-                                DecisionType = "CompleteWorkflowExecution",
-                                CompleteWorkflowExecutionDecisionAttributes = attributes
-                            }
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "CompleteWorkflowExecution",
+                        CompleteWorkflowExecutionDecisionAttributes = attributes
                     }
+                }
             };
 
             Debug.WriteLine(">>> Decision: CompleteWorkflowExecution");
@@ -622,21 +607,17 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         protected RespondDecisionTaskCompletedRequest CancelWorkflow(string details)
         {
-            var attributes = new CancelWorkflowExecutionDecisionAttributes
-            {
+            var attributes = new CancelWorkflowExecutionDecisionAttributes {
                 Details = details
             };
 
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
-                Decisions = new List<Decision>
-                    {
-                        new Decision
-                            {
-                                DecisionType = "CancelWorkflowExecution",
-                                CancelWorkflowExecutionDecisionAttributes = attributes 
-                            }
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "CancelWorkflowExecution",
+                        CancelWorkflowExecutionDecisionAttributes = attributes 
                     }
+                }
             };
 
             Debug.WriteLine(">>> Decision: CancelWorkflowExecution");
@@ -651,22 +632,18 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         protected RespondDecisionTaskCompletedRequest FailWorkflow(string details, string reason)
         {
-            var attributes = new FailWorkflowExecutionDecisionAttributes
-            {
+            var attributes = new FailWorkflowExecutionDecisionAttributes {
                 Details = details,
                 Reason = reason
             };
 
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
-                Decisions = new List<Decision>
-                    {
-                        new Decision
-                            {
-                                DecisionType = "FailWorkflowExecution",
-                                FailWorkflowExecutionDecisionAttributes = attributes 
-                            }
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "FailWorkflowExecution",
+                        FailWorkflowExecutionDecisionAttributes = attributes 
                     }
+                }
             };
 
             Debug.WriteLine(">>> Decision: FailWorkflowExecution");
@@ -681,22 +658,18 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>Properly set up decision completed request.</returns>
         protected RespondDecisionTaskCompletedRequest RecordMarker(string details, string markerName)
         {
-            var attributes = new RecordMarkerDecisionAttributes
-            {
+            var attributes = new RecordMarkerDecisionAttributes {
                 Details = details,
                 MarkerName = markerName
             };
 
-            var decisionRequest = new RespondDecisionTaskCompletedRequest
-            {
-                Decisions = new List<Decision>
-                    {
-                        new Decision
-                            {
-                                DecisionType = "RecordMarker",
-                                RecordMarkerDecisionAttributes = attributes
-                            }
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "RecordMarker",
+                        RecordMarkerDecisionAttributes = attributes
                     }
+                }
             };
 
             Debug.WriteLine(">>> Decision: RecordMarker [" +
@@ -704,43 +677,41 @@ namespace SimpleWorkflowFramework.NET
             return decisionRequest;
         }
 
-		protected RespondDecisionTaskCompletedRequest StartTimer(WorkflowTimerSetupContext timer)
-		{
-			var attributes = new StartTimerDecisionAttributes
-				{
-					TimerId = timer.TimerId,
-					StartToFireTimeout = timer.StartToFileTimeout,
-					Control = timer.Control
-				};
+        protected RespondDecisionTaskCompletedRequest StartTimer(WorkflowTimerSetupContext timer)
+        {
+            var attributes = new StartTimerDecisionAttributes {
+                TimerId = timer.TimerId,
+                StartToFireTimeout = timer.StartToFileTimeout,
+                Control = timer.Control
+            };
 
-			var decisionRequest = new RespondDecisionTaskCompletedRequest
-				{
-					Decisions = new List<Decision>
-						{
-							new Decision
-							{
-								DecisionType = "StartTimer",
-								StartTimerDecisionAttributes = attributes
-							}
-						}
-				};
+            var decisionRequest = new RespondDecisionTaskCompletedRequest {
+                Decisions = new List<Decision> {
+                    new Decision {
+                        DecisionType = "StartTimer",
+                        StartTimerDecisionAttributes = attributes
+                    }
+                }
+            };
 
-			Debug.WriteLine(">>> Decision: StartTimer " + attributes.TimerId + " (elapses in " + attributes.StartToFireTimeout + " seconds)");
+            Debug.WriteLine(">>> Decision: StartTimer " + attributes.TimerId + " (elapses in " + attributes.StartToFireTimeout + " seconds)");
 
-			return decisionRequest;
-		}
+            return decisionRequest;
+        }
+
         #endregion Decision Helpers
 
         #region Utility Methods
+
         /// <summary>
         /// Helper method to get the next step to schedule for execution.
         /// </summary>
         /// <param name="isActivity">Was the previous step an activity?</param>
-		/// <param name="isTimer">Was the previous step a timer?</param>
+        /// <param name="isTimer">Was the previous step a timer?</param>
         /// <param name="previousStepName">Previous step's name.</param>
         /// <param name="previousStepVersion">Previous step's version.</param>
         /// <returns>An ISetupContext if another step is found, otherwise null.</returns>
-		protected ISetupContext GetNextStep(bool isActivity, bool isTimer, string previousStepName, string previousStepVersion)
+        protected ISetupContext GetNextStep(bool isActivity, bool isTimer, string previousStepName, string previousStepVersion)
         {
             for (var i = 0; i < WorkflowSteps.Length; i++)
             {
@@ -751,7 +722,7 @@ namespace SimpleWorkflowFramework.NET
                 {
                     // We are looking for an activity and the current step is an activity. Let's check to see if it 
                     // is the one we are looking for, if so, return the next step to execute
-                    var activityContext = (WorkflowActivitySetupContext)step;
+                    var activityContext = (WorkflowActivitySetupContext) step;
                     if (activityContext.ActivityName == previousStepName && activityContext.ActivityVersion == previousStepVersion)
                     {
                         if (i != (WorkflowSteps.Length - 1))
@@ -760,22 +731,22 @@ namespace SimpleWorkflowFramework.NET
                         }
                     }
                 }
-				else if (step.IsTimer() & isTimer)
-				{
-					var timerContext = (WorkflowTimerSetupContext)step;
-					if (timerContext.TimerId == previousStepName)
-					{
-						if (i != (WorkflowSteps.Length - 1))
-						{
-							return WorkflowSteps[i + 1];
-						}
-					}
-				}
-				else if (step.IsWorkflow() && !(isActivity || isTimer))
+                else if (step.IsTimer() & isTimer)
+                {
+                    var timerContext = (WorkflowTimerSetupContext) step;
+                    if (timerContext.TimerId == previousStepName)
+                    {
+                        if (i != (WorkflowSteps.Length - 1))
+                        {
+                            return WorkflowSteps[i + 1];
+                        }
+                    }
+                }
+                else if (step.IsWorkflow() && !(isActivity || isTimer))
                 {
                     // We are looking for a workflow and the current step is a workflow. Let's check to see if it 
                     // is the one we are looking for, if so, return the next step to execute
-                    var workflowContext = (WorkflowSetupContext)step;
+                    var workflowContext = (WorkflowSetupContext) step;
                     if (workflowContext.WorkflowName == previousStepName && workflowContext.WorkflowVersion == previousStepVersion)
                     {
                         if (i != (WorkflowSteps.Length - 1))
@@ -794,12 +765,12 @@ namespace SimpleWorkflowFramework.NET
         /// <summary>
         /// Helper method to locate a particular activity or workflow.
         /// </summary>
-		/// <param name="isActivity">Was the previous step an activity?</param>
-		/// <param name="isTimer">Was the previous step a timer?</param>
+        /// <param name="isActivity">Was the previous step an activity?</param>
+        /// <param name="isTimer">Was the previous step a timer?</param>
         /// <param name="stepName">Step's name.</param>
         /// <param name="stepVersion">Step's version.</param>
         /// <returns>An ISetupContext if another step is found, otherwise null.</returns>
-		protected ISetupContext GetStep(bool isActivity, bool isTimer, string stepName, string stepVersion)
+        protected ISetupContext GetStep(bool isActivity, bool isTimer, string stepName, string stepVersion)
         {
             foreach (var step in WorkflowSteps)
             {
@@ -807,25 +778,25 @@ namespace SimpleWorkflowFramework.NET
                 {
                     // We are looking for an activity and the current step is an activity. Let's check to see if it 
                     // is the one we are looking for, if so, return it
-                    var activityContext = (WorkflowActivitySetupContext)step;
+                    var activityContext = (WorkflowActivitySetupContext) step;
                     if (activityContext.ActivityName == stepName && activityContext.ActivityVersion == stepVersion)
                     {
                         return step;
                     }
-				}
-				else if (step.IsTimer() & isTimer)
-				{
-					var timerContext = (WorkflowTimerSetupContext)step;
-					if (timerContext.TimerId == stepName)
-					{
-						return step;
-					}
-				}
-				else if (step.IsWorkflow() && !(isActivity || isTimer))
+                }
+                else if (step.IsTimer() & isTimer)
+                {
+                    var timerContext = (WorkflowTimerSetupContext) step;
+                    if (timerContext.TimerId == stepName)
+                    {
+                        return step;
+                    }
+                }
+                else if (step.IsWorkflow() && !(isActivity || isTimer))
                 {
                     // We are looking for a workflow and the current step is a workflow. Let's check to see if it 
                     // is the one we are looking for, if so, return it
-                    var workflowContext = (WorkflowSetupContext)step;
+                    var workflowContext = (WorkflowSetupContext) step;
                     if (workflowContext.WorkflowName == stepName && workflowContext.WorkflowVersion == stepVersion)
                     {
                         return step;
@@ -839,6 +810,7 @@ namespace SimpleWorkflowFramework.NET
 
             return null;
         }
+
         #endregion Utility Methods
     }
 }

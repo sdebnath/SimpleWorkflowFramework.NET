@@ -25,6 +25,14 @@ Global
 		{94A11372-F9EE-4133-9386-D0762C7EA272}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94A11372-F9EE-4133-9386-D0762C7EA272}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.DotNetNamingPolicy = $1
+		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
+		$1.ResourceNamePolicy = FileName
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection

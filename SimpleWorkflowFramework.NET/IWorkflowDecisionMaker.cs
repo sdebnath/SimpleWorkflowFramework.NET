@@ -30,7 +30,7 @@ namespace SimpleWorkflowFramework.NET
     {
         RespondDecisionTaskCompletedRequest OnWorkflowExecutionStarted(WorkflowDecisionContext context);
         RespondDecisionTaskCompletedRequest OnWorkflowExecutionContinuedAsNew(WorkflowDecisionContext context);
-		RespondDecisionTaskCompletedRequest OnWorkflowExecutionCancelRequested(WorkflowDecisionContext context);
+        RespondDecisionTaskCompletedRequest OnWorkflowExecutionCancelRequested(WorkflowDecisionContext context);
         RespondDecisionTaskCompletedRequest OnActivityTaskCompleted(WorkflowDecisionContext context);
         RespondDecisionTaskCompletedRequest OnActivityTaskFailed(WorkflowDecisionContext context);
         RespondDecisionTaskCompletedRequest OnActivityTaskTimedOut(WorkflowDecisionContext context);
@@ -40,9 +40,9 @@ namespace SimpleWorkflowFramework.NET
         RespondDecisionTaskCompletedRequest OnChildWorkflowExecutionFailed(WorkflowDecisionContext context);
         RespondDecisionTaskCompletedRequest OnChildWorkflowExecutionTerminated(WorkflowDecisionContext context);
         RespondDecisionTaskCompletedRequest OnChildWorkflowExecutionTimedOut(WorkflowDecisionContext context);
-		RespondDecisionTaskCompletedRequest OnStartChildWorkflowExecutionFailed(WorkflowDecisionContext context);
-		RespondDecisionTaskCompletedRequest OnTimerStarted(WorkflowDecisionContext context);
-		RespondDecisionTaskCompletedRequest OnTimerFired(WorkflowDecisionContext context);
-		RespondDecisionTaskCompletedRequest OnTimerCanceled(WorkflowDecisionContext context);
+        RespondDecisionTaskCompletedRequest OnStartChildWorkflowExecutionFailed(WorkflowDecisionContext context);
+        RespondDecisionTaskCompletedRequest OnTimerStarted(WorkflowDecisionContext context);
+        RespondDecisionTaskCompletedRequest OnTimerFired(WorkflowDecisionContext context);
+        RespondDecisionTaskCompletedRequest OnTimerCanceled(WorkflowDecisionContext context);
     }
 }

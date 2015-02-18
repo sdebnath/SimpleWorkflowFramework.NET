@@ -32,59 +32,59 @@ namespace SimpleWorkflowFramework.NET
     /// <summary>
     /// Provides an iterator for the history events in a decision request.
     /// </summary>
-	public class WorkflowEventsIterator : IEnumerable<HistoryEvent>
+    public class WorkflowEventsIterator : IEnumerable<HistoryEvent>
     {
-		private readonly List<HistoryEvent> _historyEvents;
-		private readonly PollForDecisionTaskRequest _request;
-		private readonly IAmazonSimpleWorkflow _swfClient;
-		private DecisionTask _lastResponse;
+        private readonly List<HistoryEvent> _historyEvents;
+        private readonly PollForDecisionTaskRequest _request;
+        private readonly IAmazonSimpleWorkflow _swfClient;
+        private DecisionTask _lastResponse;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="SimpleWorkflowFramework.NET.WorkflowEventsIterator"/> class.
-		/// </summary>
-		/// <param name="decisionTask">Reference to the decision task passed in from SWF.</param>
-		/// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
-		/// <param name="swfClient">An SWF client.</param>
-		public WorkflowEventsIterator(ref DecisionTask decisionTask, PollForDecisionTaskRequest request, IAmazonSimpleWorkflow swfClient)
-		{
-			_lastResponse = decisionTask;
-			_request = request;
-			_swfClient = swfClient;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SimpleWorkflowFramework.NET.WorkflowEventsIterator"/> class.
+        /// </summary>
+        /// <param name="decisionTask">Reference to the decision task passed in from SWF.</param>
+        /// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
+        /// <param name="swfClient">An SWF client.</param>
+        public WorkflowEventsIterator(ref DecisionTask decisionTask, PollForDecisionTaskRequest request, IAmazonSimpleWorkflow swfClient)
+        {
+            _lastResponse = decisionTask;
+            _request = request;
+            _swfClient = swfClient;
 
-			_historyEvents = decisionTask.Events;
-		}
+            _historyEvents = decisionTask.Events;
+        }
 
         /// <summary>
         /// Enumerator for history events needed for the decision.
         /// </summary>
         /// <returns>IEnumerator for the scoped events.</returns>
         public IEnumerator<HistoryEvent> GetEnumerator()
-		{
-			foreach (HistoryEvent e in _historyEvents)
-			{
-				yield return e;
-			}
+        {
+            foreach (HistoryEvent e in _historyEvents)
+            {
+                yield return e;
+            }
 
-			while (!string.IsNullOrEmpty(_lastResponse.NextPageToken))
-			{
-				List<HistoryEvent> events = GetNextPage();
-				_historyEvents.AddRange(events);
+            while (!string.IsNullOrEmpty(_lastResponse.NextPageToken))
+            {
+                List<HistoryEvent> events = GetNextPage();
+                _historyEvents.AddRange(events);
 
-				foreach (HistoryEvent e in events)
-				{
-					yield return e;
-				}
-			}
+                foreach (HistoryEvent e in events)
+                {
+                    yield return e;
+                }
+            }
         }
 
-		/// <summary>
-		/// Gets the enumerator.
-		/// </summary>
-		/// <returns>The enumerator.</returns>
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
+        /// <summary>
+        /// Gets the enumerator.
+        /// </summary>
+        /// <returns>The enumerator.</returns>
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
         /// <summary>
         /// Indexer access based on event ID.
@@ -95,61 +95,59 @@ namespace SimpleWorkflowFramework.NET
         {
             get
             {
-				// While the eventId is not in range and there are more history pages to retrieve,
-				// retrieve more history events.
-				while (eventId != 0 && eventId > _historyEvents.Count
-				       && !string.IsNullOrEmpty(_lastResponse.NextPageToken))
-				{
-					List<HistoryEvent> events = GetNextPage();
-					_historyEvents.AddRange(events);
-				}
+                // While the eventId is not in range and there are more history pages to retrieve,
+                // retrieve more history events.
+                while (eventId != 0 && eventId > _historyEvents.Count
+                && !string.IsNullOrEmpty(_lastResponse.NextPageToken))
+                {
+                    List<HistoryEvent> events = GetNextPage();
+                    _historyEvents.AddRange(events);
+                }
 
-				if (eventId < 0 || eventId > _historyEvents.Count)
+                if (eventId < 0 || eventId > _historyEvents.Count)
                 {
                     throw new ArgumentOutOfRangeException("eventId");
                 }
 
                 return _historyEvents[eventId - 1];
             }
-		}
+        }
 
-		/// <summary>
-		/// Retrieves the next page of history from SWF.
-		/// </summary>
-		/// <returns>The next page of history events.</returns>
-		private List<HistoryEvent> GetNextPage()
-		{
-			PollForDecisionTaskRequest request = new PollForDecisionTaskRequest()
-				{
-					Domain = _request.Domain,
-					NextPageToken = _lastResponse.NextPageToken,
-					TaskList = _request.TaskList,
-					MaximumPageSize = _request.MaximumPageSize
-				};
+        /// <summary>
+        /// Retrieves the next page of history from SWF.
+        /// </summary>
+        /// <returns>The next page of history events.</returns>
+        private List<HistoryEvent> GetNextPage()
+        {
+            PollForDecisionTaskRequest request = new PollForDecisionTaskRequest() {
+                Domain = _request.Domain,
+                NextPageToken = _lastResponse.NextPageToken,
+                TaskList = _request.TaskList,
+                MaximumPageSize = _request.MaximumPageSize
+            };
 
-			int retryCount = 10;
-			int currentTry = 1;
-			bool pollFailed;
+            int retryCount = 10;
+            int currentTry = 1;
+            bool pollFailed;
 
-			do
-			{
-				pollFailed = false;
+            do
+            {
+                pollFailed = false;
 
-				try
-				{
-					_lastResponse = _swfClient.PollForDecisionTask(request).DecisionTask;
-				}
-				catch (Exception ex)
-				{
-					Console.Error.WriteLine("Poll request failed with exception: " + ex);
-					pollFailed = true;
-				}
+                try
+                {
+                    _lastResponse = _swfClient.PollForDecisionTask(request).DecisionTask;
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("Poll request failed with exception: " + ex);
+                    pollFailed = true;
+                }
 
-				currentTry += 1;
-			}
-			while (pollFailed && currentTry <= retryCount);
+                currentTry += 1;
+            } while (pollFailed && currentTry <= retryCount);
 
-			return _lastResponse.Events;
-		}
+            return _lastResponse.Events;
+        }
     }
 }
