@@ -34,7 +34,7 @@ namespace SimpleWorkflowFramework.NET
     /// Processes SWF events to extract the context upon which the current decision needs to be made
     /// and calls on the appropriate workflow decision object to make a decision.
     /// </summary>
-    public class WorkflowEventsProcessor : IDisposable
+    public class WorkflowEventsProcessor
     {
         private readonly DecisionTask _decisionTask;
         private readonly PollForDecisionTaskRequest _request;
@@ -42,17 +42,6 @@ namespace SimpleWorkflowFramework.NET
         private readonly IAmazonSimpleWorkflow _swfClient;
         private readonly WorkflowEventsIterator _events;
         private readonly Dictionary<string, Type> _workflows;
-
-        /// <summary>
-        /// Constructor for the workflow event processor. 
-        /// </summary>
-        /// <param name="decisionTask">Decision task passed in from SWF as decision task response.</param>
-        /// <param name="workflows">IEnumerable set of string for workflow name and Type for workflow class.</param>
-        /// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
-        public WorkflowEventsProcessor(DecisionTask decisionTask, IEnumerable<KeyValuePair<string, Type>> workflows, PollForDecisionTaskRequest request)
-            : this(decisionTask, workflows, request, new AmazonSimpleWorkflowClient())
-        {
-        }
 
         /// <summary>
         /// Constructor for the workflow event processor. 
@@ -126,9 +115,10 @@ namespace SimpleWorkflowFramework.NET
                         break;
 
                     case "DecisionTaskCompleted":
-						// If an decision task completed event was encountered, use it to save 
-						// some of the key information as the execution context is not available as part of
-						// the rest of the ActivityTask* event attributes. We don't act on this event.
+                        // If a decision task completed event was encountered, use it to save 
+                        // some of the key information as the execution context is not available as part of
+                        // the rest of the ActivityTask* event attributes.
+                        // NB: We don't act on this event.
                         _decisionContext.ExecutionContext = historyEvent.DecisionTaskCompletedEventAttributes.ExecutionContext;
                         break;
 
@@ -348,20 +338,10 @@ namespace SimpleWorkflowFramework.NET
                     throw new InvalidOperationException("Unhandled event type.");
             }
 
-//			if (decisionCompletedRequest.Decisions.Count == 0)
-//			{
-//				return null;
-//			}
-
             // Assign the task token and return
             decisionCompletedRequest.TaskToken = _decisionTask.TaskToken;
             decisionCompletedRequest.ExecutionContext = _decisionContext.ExecutionContext;
             return decisionCompletedRequest;
-        }
-
-        public void Dispose()
-        {
-            _swfClient.Dispose();
         }
     }
 }

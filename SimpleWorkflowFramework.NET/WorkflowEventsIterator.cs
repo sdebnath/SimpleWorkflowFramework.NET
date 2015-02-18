@@ -24,8 +24,8 @@
 
 using System;
 using System.Collections.Generic;
-using Amazon.SimpleWorkflow.Model;
 using Amazon.SimpleWorkflow;
+using Amazon.SimpleWorkflow.Model;
 
 namespace SimpleWorkflowFramework.NET
 {
@@ -67,7 +67,7 @@ namespace SimpleWorkflowFramework.NET
 
             while (!string.IsNullOrEmpty(_lastResponse.NextPageToken))
             {
-                List<HistoryEvent> events = GetNextPage();
+                var events = GetNextPage();
                 _historyEvents.AddRange(events);
 
                 foreach (HistoryEvent e in events)
@@ -97,10 +97,9 @@ namespace SimpleWorkflowFramework.NET
             {
                 // While the eventId is not in range and there are more history pages to retrieve,
                 // retrieve more history events.
-                while (eventId != 0 && eventId > _historyEvents.Count
-                && !string.IsNullOrEmpty(_lastResponse.NextPageToken))
+                while (eventId != 0 && eventId > _historyEvents.Count && !string.IsNullOrEmpty(_lastResponse.NextPageToken))
                 {
-                    List<HistoryEvent> events = GetNextPage();
+                    var events = GetNextPage();
                     _historyEvents.AddRange(events);
                 }
 
@@ -119,14 +118,14 @@ namespace SimpleWorkflowFramework.NET
         /// <returns>The next page of history events.</returns>
         private List<HistoryEvent> GetNextPage()
         {
-            PollForDecisionTaskRequest request = new PollForDecisionTaskRequest() {
+            var request = new PollForDecisionTaskRequest {
                 Domain = _request.Domain,
                 NextPageToken = _lastResponse.NextPageToken,
                 TaskList = _request.TaskList,
                 MaximumPageSize = _request.MaximumPageSize
             };
 
-            int retryCount = 10;
+            const int retryCount = 10;
             int currentTry = 1;
             bool pollFailed;
 

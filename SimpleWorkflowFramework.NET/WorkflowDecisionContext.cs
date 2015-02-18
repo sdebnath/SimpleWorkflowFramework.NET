@@ -45,10 +45,10 @@ namespace SimpleWorkflowFramework.NET
         public string ChildWorkflowVersion { get; set; }
         public string TimerId { get; set; }
 
-        public Dictionary<string,string> Markers { get; set; }
-        public Dictionary<string,TimerStartedEventAttributes> Timers { get; set; }
-        public Dictionary<string,TimerFiredEventAttributes> FiredTimers { get; set; }
-        public Dictionary<string,TimerCanceledEventAttributes> CanceledTimers { get; set; }
+        public Dictionary<string, string> Markers { get; set; }
+        public Dictionary<string, TimerStartedEventAttributes> Timers { get; set; }
+        public Dictionary<string, TimerFiredEventAttributes> FiredTimers { get; set; }
+        public Dictionary<string, TimerCanceledEventAttributes> CanceledTimers { get; set; }
 
         public string Input { get; set; }
         public string Result { get; set; }

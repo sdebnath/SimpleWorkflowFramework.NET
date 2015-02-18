@@ -23,13 +23,12 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 
 namespace SimpleWorkflowFramework.NET
 {
     public enum TimerCanceledAction
     {
-        ProceedToNext,
+        ProceedToNextActivity,
         CancelWorkflow,
         CompleteWorkflow
     }
@@ -37,11 +36,43 @@ namespace SimpleWorkflowFramework.NET
     [Serializable]
     public class WorkflowTimerSetupContext : ISetupContext
     {
-        public string TimerId { get; set; }
-        public string StartToFileTimeout { get; set; }
-        public string Control { get; set; }
+        private int _startToFireTimeoutInSeconds;
+        private string _control = "";
+        private TimerCanceledAction _cancelAction = TimerCanceledAction.ProceedToNextActivity;
 
-        private TimerCanceledAction _cancelAction = TimerCanceledAction.ProceedToNext;
+        /// <summary>
+        ///     Gets or sets the timer identifier.
+        /// </summary>
+        /// <value>The timer identifier.</value>
+        public string TimerId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the start to fire timeout, in seconds.
+        /// </summary>
+        /// <value>The start to fire timeout in seconds.</value>
+        public int StartToFireTimeoutInSeconds {
+            get { return _startToFireTimeoutInSeconds; }
+            set {
+                if (value < 0) throw new ArgumentOutOfRangeException("value", "Value must be greater than or equal to zero.");
+                if (value > 99999999) throw new ArgumentOutOfRangeException("value", "Value must be less than 9 decimal digits.");
+
+                _startToFireTimeoutInSeconds = value;
+            }
+        }
+
+        /// <summary>
+        /// Optional. Data attached to the event that can be used by the decider in subsequent workflow tasks.
+        /// </summary>
+        /// <remarks>Length constraints: Minimum length of 0. Maximum length of 32768.</remarks>
+        public string Control {
+            get { return _control; }
+            set {
+                if (value.Length > 32768) throw new ArgumentOutOfRangeException("value", "Value exceeded maximum allowed length.");
+
+                _control = value;
+            }
+        }
+
         public TimerCanceledAction CancelAction {
             get { return _cancelAction; }
             set { _cancelAction = value; }
@@ -54,4 +85,3 @@ namespace SimpleWorkflowFramework.NET
         public bool IsTimer() { return true; }
     }
 }
-

@@ -31,9 +31,6 @@ namespace SimpleWorkflowFramework.NET
     {
         public string StartingInput { get; set; }
 
-        public string ExecutionContext { get; set; }
-
         public string PreviousResult { get; set; }
     }
 }
-
