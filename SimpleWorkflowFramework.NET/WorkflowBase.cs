@@ -132,7 +132,7 @@ namespace SimpleWorkflowFramework.NET
             var nextStep = GetNextStep(true /* activity completion */, false /* is timer */, context.ActivityName, context.ActivityVersion);
 
             var activityState = BuildActivityState(context);
-            return GetNextTask(nextStep, context, activityState);
+            return GetNextRequest(nextStep, context, activityState);
         }
 
         /// <summary>
@@ -246,7 +246,7 @@ namespace SimpleWorkflowFramework.NET
             var nextStep = GetNextStep(false /* workflow completion */, false /* is timer */,
                                        context.ChildWorkflowName, context.ChildWorkflowVersion);
 
-            return GetNextTask(nextStep, context, context.Result);
+            return GetNextRequest(nextStep, context, context.Result);
         }
 
         /// <summary>
@@ -340,7 +340,7 @@ namespace SimpleWorkflowFramework.NET
             var nextStep = GetNextStep(false /* activity completion */, true /* is timer */, context.TimerId, null);
 
             var activityState = BuildActivityState(context);
-            return GetNextTask(nextStep, context, activityState);
+            return GetNextRequest(nextStep, context, activityState);
         }
 
         public RespondDecisionTaskCompletedRequest OnTimerCanceled(WorkflowDecisionContext context)
@@ -360,14 +360,14 @@ namespace SimpleWorkflowFramework.NET
                     var nextStep = GetNextStep(false /* activity completion */, true /* is timer */, context.TimerId, null);
 
                     var activityState = BuildActivityState(context);
-                    return GetNextTask(nextStep, context, activityState);
+                    return GetNextRequest(nextStep, context, activityState);
 
                 default:
                     throw new InvalidOperationException();
             }
         }
 
-        private RespondDecisionTaskCompletedRequest GetNextTask(ISetupContext nextStep, WorkflowDecisionContext context, string nextInput)
+        private RespondDecisionTaskCompletedRequest GetNextRequest(ISetupContext nextStep, WorkflowDecisionContext context, string nextInput)
         {
             // If we don't have anymore steps, complete the workflow
             if (nextStep == null)
