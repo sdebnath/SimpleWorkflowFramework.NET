@@ -178,7 +178,7 @@ namespace Application
 
                                         // Define a new WorkflowEventsProcessor object and let it make the decision!
                                         stopwatch.Start();
-                                        var workflowProcessor = new WorkflowEventsProcessor(decisionTask, workflows);
+                                        var workflowProcessor = new WorkflowEventsProcessor(decisionTask, workflows, decisionTaskRequest, swfClient);
                                         var decisionRequest = workflowProcessor.Decide();
                                         stopwatch.Stop();
 

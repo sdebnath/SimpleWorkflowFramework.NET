@@ -23,6 +23,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using Amazon.SimpleWorkflow.Model;
 
 namespace SimpleWorkflowFramework.NET
 {
@@ -32,6 +33,8 @@ namespace SimpleWorkflowFramework.NET
     public class WorkflowDecisionContext
     {
         public string DecisionType { get; set; }
+        public string StartingInput { get; set; }
+        public string ExecutionContext { get; set; }
 
         public string WorkflowName { get; set; }
         public string WorkflowVersion { get; set; }
@@ -40,8 +43,12 @@ namespace SimpleWorkflowFramework.NET
         public string ActivityVersion { get; set; }
         public string ChildWorkflowName { get; set; }
         public string ChildWorkflowVersion { get; set; }
+        public string TimerId { get; set; }
 
-        public Dictionary<string,string> Markers { get; set; }
+        public Dictionary<string, string> Markers { get; set; }
+        public Dictionary<string, TimerStartedEventAttributes> Timers { get; set; }
+        public Dictionary<string, TimerFiredEventAttributes> FiredTimers { get; set; }
+        public Dictionary<string, TimerCanceledEventAttributes> CanceledTimers { get; set; }
 
         public string Input { get; set; }
         public string Result { get; set; }
@@ -54,6 +61,9 @@ namespace SimpleWorkflowFramework.NET
         public WorkflowDecisionContext()
         {
             Markers = new Dictionary<string, string>();
+            Timers = new Dictionary<string, TimerStartedEventAttributes>();
+            FiredTimers = new Dictionary<string, TimerFiredEventAttributes>();
+            CanceledTimers = new Dictionary<string, TimerCanceledEventAttributes>();
         }
     }
 }

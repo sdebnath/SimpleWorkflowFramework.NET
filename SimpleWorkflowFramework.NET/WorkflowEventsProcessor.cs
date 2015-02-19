@@ -25,6 +25,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Amazon.SimpleWorkflow;
 using Amazon.SimpleWorkflow.Model;
 
 namespace SimpleWorkflowFramework.NET
@@ -36,7 +37,9 @@ namespace SimpleWorkflowFramework.NET
     public class WorkflowEventsProcessor
     {
         private readonly DecisionTask _decisionTask;
+        private readonly PollForDecisionTaskRequest _request;
         private readonly WorkflowDecisionContext _decisionContext;
+        private readonly IAmazonSimpleWorkflow _swfClient;
         private readonly WorkflowEventsIterator _events;
         private readonly Dictionary<string, Type> _workflows;
 
@@ -45,7 +48,9 @@ namespace SimpleWorkflowFramework.NET
         /// </summary>
         /// <param name="decisionTask">Decision task passed in from SWF as decision task response.</param>
         /// <param name="workflows">IEnumerable set of string for workflow name and Type for workflow class.</param>
-        public WorkflowEventsProcessor(DecisionTask decisionTask, IEnumerable<KeyValuePair<string, Type>> workflows)
+        /// <param name="request">The request used to retrieve <paramref name="decisionTask"/>, which will be used to retrieve subsequent history event pages.</param>
+        /// <param name="swfClient">An SWF client.</param>
+        public WorkflowEventsProcessor(DecisionTask decisionTask, IEnumerable<KeyValuePair<string, Type>> workflows, PollForDecisionTaskRequest request, IAmazonSimpleWorkflow swfClient)
         {
             // Decision task can't be null.
             if (decisionTask == null)
@@ -53,14 +58,21 @@ namespace SimpleWorkflowFramework.NET
                 throw new ArgumentNullException("decisionTask");
             }
 
+            if (request == null)
+            {
+                throw new ArgumentNullException("request");
+            }
+
             // Store the decision task and allocate a new decision context and event dictionary which
             // we will use as we walk through the chain of events
             _decisionTask = decisionTask;
+            _request = request;
             _decisionContext = new WorkflowDecisionContext();
+            _swfClient = swfClient;
 
             // Set up our events data structure
-            _events = new WorkflowEventsIterator(ref decisionTask);
-            _workflows = (Dictionary<string, Type>)workflows;
+            _events = new WorkflowEventsIterator(ref decisionTask, _request, _swfClient);
+            _workflows = (Dictionary<string, Type>) workflows;
         }
 
         /// <summary>
@@ -89,11 +101,25 @@ namespace SimpleWorkflowFramework.NET
                     case "WorkflowExecutionStarted":
                         _decisionContext.DecisionType = historyEvent.EventType;
                         _decisionContext.Input = historyEvent.WorkflowExecutionStartedEventAttributes.Input;
+                        _decisionContext.StartingInput = historyEvent.WorkflowExecutionStartedEventAttributes.Input;
                         break;
 
                     case "WorkflowExecutionContinuedAsNew":
                         _decisionContext.DecisionType = historyEvent.EventType;
                         _decisionContext.Input = historyEvent.WorkflowExecutionContinuedAsNewEventAttributes.Input;
+                        break;
+
+                    case "WorkflowExecutionCancelRequested":
+                        _decisionContext.DecisionType = historyEvent.EventType;
+                        _decisionContext.Cause = historyEvent.WorkflowExecutionCancelRequestedEventAttributes.Cause;
+                        break;
+
+                    case "DecisionTaskCompleted":
+                        // If a decision task completed event was encountered, use it to save 
+                        // some of the key information as the execution context is not available as part of
+                        // the rest of the ActivityTask* event attributes.
+                        // NB: We don't act on this event.
+                        _decisionContext.ExecutionContext = historyEvent.DecisionTaskCompletedEventAttributes.ExecutionContext;
                         break;
 
                     case "ActivityTaskScheduled":
@@ -196,6 +222,42 @@ namespace SimpleWorkflowFramework.NET
                             historyEvent.StartChildWorkflowExecutionFailedEventAttributes.WorkflowType.Version;
                         _decisionContext.Cause = historyEvent.StartChildWorkflowExecutionFailedEventAttributes.Cause;
                         break;
+
+                    case "TimerStarted":
+                        var timer = historyEvent.TimerStartedEventAttributes;
+
+                        _decisionContext.DecisionType = historyEvent.EventType;
+                        _decisionContext.TimerId = timer.TimerId;
+                        _decisionContext.Timers[timer.TimerId] = timer;
+                        break;
+
+                    case "TimerFired":
+                        var firedTimer = historyEvent.TimerFiredEventAttributes;
+
+                        _decisionContext.DecisionType = historyEvent.EventType;
+                        _decisionContext.TimerId = firedTimer.TimerId;
+
+                        if (_decisionContext.Timers.ContainsKey(firedTimer.TimerId))
+                        {
+                            _decisionContext.FiredTimers[firedTimer.TimerId] = firedTimer;
+                            _decisionContext.Timers.Remove(firedTimer.TimerId);
+                        }
+
+                        break;
+
+                    case "TimerCanceled":
+                        var canceledTimer = historyEvent.TimerCanceledEventAttributes;
+
+                        _decisionContext.DecisionType = historyEvent.EventType;
+                        _decisionContext.TimerId = canceledTimer.TimerId;
+
+                        if (_decisionContext.Timers.ContainsKey(canceledTimer.TimerId))
+                        {
+                            _decisionContext.CanceledTimers[canceledTimer.TimerId] = canceledTimer;
+                            _decisionContext.Timers.Remove(canceledTimer.TimerId);
+                        }
+
+                        break;
                 }
             }
 
@@ -203,7 +265,7 @@ namespace SimpleWorkflowFramework.NET
 
             // Create the correct instance of the decision maker
             var decisionMaker = 
-                (IWorkflowDecisionMaker)Activator.CreateInstance(_workflows[_decisionContext.WorkflowName]);
+                (IWorkflowDecisionMaker) Activator.CreateInstance(_workflows[_decisionContext.WorkflowName]);
 
             // Match the context and call the right method to make a decision
             switch (_decisionContext.DecisionType)
@@ -214,6 +276,10 @@ namespace SimpleWorkflowFramework.NET
 
                 case "WorkflowExecutionContinuedAsNew":
                     decisionCompletedRequest = decisionMaker.OnWorkflowExecutionContinuedAsNew(_decisionContext);                
+                    break;
+
+                case "WorkflowExecutionCancelRequested":
+                    decisionCompletedRequest = decisionMaker.OnWorkflowExecutionCancelRequested(_decisionContext);
                     break;
 
                 case "ActivityTaskCompleted":
@@ -256,12 +322,25 @@ namespace SimpleWorkflowFramework.NET
                     decisionCompletedRequest = decisionMaker.OnStartChildWorkflowExecutionFailed(_decisionContext);
                     break;
 
+                case "TimerStarted":
+                    decisionCompletedRequest = decisionMaker.OnTimerStarted(_decisionContext);
+                    break;
+
+                case "TimerFired":
+                    decisionCompletedRequest = decisionMaker.OnTimerFired(_decisionContext);
+                    break;
+
+                case "TimerCanceled":
+                    decisionCompletedRequest = decisionMaker.OnTimerCanceled(_decisionContext);
+                    break;
+
                 default:
                     throw new InvalidOperationException("Unhandled event type.");
             }
 
             // Assign the task token and return
             decisionCompletedRequest.TaskToken = _decisionTask.TaskToken;
+            decisionCompletedRequest.ExecutionContext = _decisionContext.ExecutionContext;
             return decisionCompletedRequest;
         }
     }

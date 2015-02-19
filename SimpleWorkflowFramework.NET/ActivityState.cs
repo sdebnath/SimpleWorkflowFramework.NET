@@ -1,5 +1,5 @@
 ﻿//----------------------------------------------------------------------------------------------------------------------
-//  Copyright (c) 2013, Shawn Debnath. All rights reserved.
+//  Copyright (c) 2015, Shawn Debnath. All rights reserved.
 //    
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -22,12 +22,15 @@
 //  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //----------------------------------------------------------------------------------------------------------------------
 
+using System;
+
 namespace SimpleWorkflowFramework.NET
 {
-    public interface ISetupContext
+    [Serializable]
+    public class ActivityState
     {
-        bool IsActivity();
-        bool IsWorkflow();
-        bool IsTimer();
+        public string StartingInput { get; set; }
+
+        public string PreviousResult { get; set; }
     }
 }

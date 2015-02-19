@@ -51,5 +51,6 @@ namespace SimpleWorkflowFramework.NET
         // ISetupContext members
         public bool IsActivity() { return false; }
         public bool IsWorkflow() { return true; }
+        public bool IsTimer() { return false; }
     }
 }

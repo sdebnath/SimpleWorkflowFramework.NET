@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PolicySet name="SimpleWorkflowFramework.NET">
+  <DotNetNamingPolicy>
+    <DirectoryNamespaceAssociation>PrefixedHierarchical</DirectoryNamespaceAssociation>
+    <ResourceNamePolicy>FileName</ResourceNamePolicy>
+  </DotNetNamingPolicy>
+  <TextStylePolicy inheritsSet="null" scope="text/x-csharp" />
+  <CSharpFormattingPolicy inheritsSet="Mono" inheritsScope="text/x-csharp" scope="text/x-csharp">
+    <IndentSwitchBody>True</IndentSwitchBody>
+    <IndentBlocksInsideExpressions>True</IndentBlocksInsideExpressions>
+    <AnonymousMethodBraceStyle>NextLineShifted</AnonymousMethodBraceStyle>
+    <PropertyBraceStyle>NextLine</PropertyBraceStyle>
+    <PropertyGetBraceStyle>NextLine</PropertyGetBraceStyle>
+    <PropertySetBraceStyle>NextLine</PropertySetBraceStyle>
+    <EventBraceStyle>NextLine</EventBraceStyle>
+    <EventAddBraceStyle>NextLine</EventAddBraceStyle>
+    <EventRemoveBraceStyle>NextLine</EventRemoveBraceStyle>
+    <StatementBraceStyle>NextLine</StatementBraceStyle>
+    <ElseNewLinePlacement>NewLine</ElseNewLinePlacement>
+    <CatchNewLinePlacement>NewLine</CatchNewLinePlacement>
+    <FinallyNewLinePlacement>NewLine</FinallyNewLinePlacement>
+    <EmbeddedStatementPlacement>DoNotCare</EmbeddedStatementPlacement>
+    <BeforeMethodDeclarationParentheses>False</BeforeMethodDeclarationParentheses>
+    <BeforeMethodCallParentheses>False</BeforeMethodCallParentheses>
+    <BeforeConstructorDeclarationParentheses>False</BeforeConstructorDeclarationParentheses>
+    <BeforeIndexerDeclarationBracket>False</BeforeIndexerDeclarationBracket>
+    <BeforeDelegateDeclarationParentheses>False</BeforeDelegateDeclarationParentheses>
+    <AfterDelegateDeclarationParameterComma>True</AfterDelegateDeclarationParameterComma>
+    <NewParentheses>False</NewParentheses>
+    <BeforeSizeOfParentheses>True</BeforeSizeOfParentheses>
+    <BeforeTypeOfParentheses>True</BeforeTypeOfParentheses>
+    <SpacesBeforeBrackets>False</SpacesBeforeBrackets>
+    <SpacesAfterTypecast>True</SpacesAfterTypecast>
+    <BlankLinesAfterUsings>2</BlankLinesAfterUsings>
+    <AlignToFirstMethodCallArgument>True</AlignToFirstMethodCallArgument>
+    <AlignToFirstIndexerArgument>True</AlignToFirstIndexerArgument>
+  </CSharpFormattingPolicy>
+</PolicySet>
