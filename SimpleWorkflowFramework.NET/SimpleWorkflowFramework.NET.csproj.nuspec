@@ -13,7 +13,7 @@
 		<releaseNotes>Support for SWF timers and workflow cancellation requests. Full history event evalution rather than scoped.</releaseNotes>
 		<copyright>Copyright (c) 2013-2015 Shawn Debnath</copyright>
 		<dependencies>
-			<dependency id="AWSSDK" version="2.3.21.1" />
+			<dependency id="AWSSDK" version="2.3.0.0" />
 			<dependency id="Newtonsoft.Json" version="6.0.0" />
 		</dependencies>
 	</metadata>
