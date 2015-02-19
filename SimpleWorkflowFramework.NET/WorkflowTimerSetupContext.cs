@@ -78,8 +78,6 @@ namespace SimpleWorkflowFramework.NET
             set { _cancelAction = value; }
         }
 
-        public delegate string OnCancel(WorkflowDecisionContext context);
-
         public bool IsActivity() { return false; }
         public bool IsWorkflow() { return false; }
         public bool IsTimer() { return true; }
