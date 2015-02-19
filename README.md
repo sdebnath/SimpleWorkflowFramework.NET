@@ -12,6 +12,7 @@ As of today, the events we callback on are:
 
 *   WorkflowExecutionStarted
 *   WorkflowExecutionContinuedAsNew
+*   WorkflowExecutionCancelRequested
 *   ActivityTaskCompleted
 *   ActivityTaskFailed
 *   ActivityTaskTimedOut
@@ -22,11 +23,12 @@ As of today, the events we callback on are:
 *   ChildWorkflowExecutionTerminated
 *   ChildWorkflowExecutionTimedOut
 *   StartChildWorkflowExecutionFailed
+*   TimerStarted
+*   TimerFired
+*   TimerCanceled
 
 Features not _yet_ implemented:
 
-*   Timers
-*   Cancellations
 *   Signals
 
 To implement a workflow to receive event callbacks, you will need to implement the IWorkflowDecisionMaker interface
@@ -154,6 +156,8 @@ https://nuget.org/packages/SimpleWorkflowFramework.NET/
 
 ### Contributors:
 *   Shawn Debnath
+*   Michael Teper
+*   Matt Strom
 
 There's a lot that can be done to improve this library and make other's lives easier and this project could definitely
 use some help. I encourage folks to clone the repository, make improvements, be it code, features, documentation, 
