@@ -43,7 +43,7 @@
       <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="AWSSDK">
-      <HintPath>..\packages\AWSSDK.2.3.20.0\lib\net45\AWSSDK.dll</HintPath>
+      <HintPath>..\packages\AWSSDK.2.3.21.1\lib\net45\AWSSDK.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
