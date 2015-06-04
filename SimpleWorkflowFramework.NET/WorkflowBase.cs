@@ -246,7 +246,8 @@ namespace SimpleWorkflowFramework.NET
             var nextStep = GetNextStep(false /* workflow completion */, false /* is timer */,
                                        context.ChildWorkflowName, context.ChildWorkflowVersion);
 
-            return GetNextRequest(nextStep, context, context.Result);
+            var activityState = BuildActivityState(context);
+            return GetNextRequest(nextStep, context, activityState);
         }
 
         /// <summary>
