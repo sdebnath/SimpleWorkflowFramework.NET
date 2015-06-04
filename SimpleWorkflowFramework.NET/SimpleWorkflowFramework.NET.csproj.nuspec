@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
 	<metadata>
 		<id>SimpleWorkflowFramework.NET</id>
-		<version>1.2.0</version>
+		<version>1.2.2</version>
 		<authors>Shawn Debnath</authors>
 		<owners>Shawn Debnath</owners>
 		<licenseUrl>http://opensource.org/licenses/BSD-2-Clause</licenseUrl>
@@ -10,7 +10,7 @@
 		<requireLicenseAcceptance>true</requireLicenseAcceptance>
 		<description>A helper library to simplify writing code for AWS SWF in C#</description>
 		<summary>A helper library to simplify writing code for AWS SWF in C#</summary>
-		<releaseNotes>Support for SWF timers and workflow cancellation requests. Full history event evalution rather than scoped.</releaseNotes>
+		<releaseNotes>Fixed issue with starting input not being passed along with previous result to subsequent activity when it occurs after a child workflow.</releaseNotes>
 		<copyright>Copyright (c) 2013-2015 Shawn Debnath</copyright>
 		<dependencies>
 			<dependency id="AWSSDK" version="2.3.0.0" />
